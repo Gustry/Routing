@@ -18,7 +18,7 @@ class Graph:
         self.director = QgsLineVectorLayerDirector(layer, -1, '', '', '', 3)
         self.director.addProperter(QgsDistanceArcProperter())
         self.crs = self.layer.crs()
-        self.builder = QgsGraphBuilder(self.crs)
+        self.builder = QgsGraphBuilder(self.crs, topologyTolerance=0)
 
         self.tiedPoint = self.director.makeGraph(self.builder, self.points)
         self.graph = self.builder.graph()
@@ -37,26 +37,32 @@ class Graph:
 
     def cost_exits(self, idps, exits):
 
-        exit_layer = QgsVectorLayer("Point?crs=epsg:4326&field=id_idp:integer", "Exits", "memory")
+        exit_layer = QgsVectorLayer("Point?crs=epsg:4326&field=id_idp:integer&field=distance:integer", "Exits", "memory")
         pr_exit = exit_layer.dataProvider()
-        idp_id = -1
-        min = -1
+
         for exit in exits.getFeatures():
+            idp_id = -1
+            min_cost = -1
             for idp in idps.getFeatures():
                 cost = self.cost_between(idp.geometry().asPoint(), exit.geometry().asPoint())
-                if cost < min or min < 0:
-                    min = cost
-                    idp_id = idp.id()
+                print "%s : %s ( %s ) -> %s" % (exit.id(), idp.id(), idp.geometry().asPoint(), cost)
+                if cost >= 0:
+                    if cost < min_cost or min_cost <= 0:
+                        min_cost = cost
+                        idp_id = idp.id()
+
+                        #l = self.route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
+                        #QgsMapLayerRegistry.instance().addMapLayers([l])
+
             f = QgsFeature()
-            f.setAttributes([idp_id])
+            attrs = [idp_id, min_cost]
+            print attrs
+            f.setAttributes(attrs)
             f.setGeometry(exit.geometry())
             pr_exit.addFeatures([f])
 
         pr_exit.updateExtents()
-        QgsMapLayerRegistry.instance().addMapLayer(exit_layer)
-
-
-
+        return exit_layer
 
     def cost_between(self, start, end):
 
@@ -69,14 +75,14 @@ class Graph:
 
         vertex_start_id = self.get_vertex(start)
         vertex_stop_id = self.get_vertex(end)
-        tree, cost = self.compute_dijkstra(vertex_start_id)
-
-        if tree[vertex_stop_id] == -1:
-            print "Path not found"
-            return -1
+        tree, cost = self.compute_dijkstra(start)
 
         layer_way = QgsVectorLayer("LineString?crs=epsg:4326", "Line", "memory")
         pr_way = layer_way.dataProvider()
+
+        if tree[vertex_stop_id] == -1:
+            print "Path not found"
+            return layer_way
 
         current_vertex = vertex_stop_id
 

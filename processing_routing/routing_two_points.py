@@ -28,7 +28,7 @@ class RoutingTwoPointsGeoAlgorithm(GeoAlgorithm):
         self.group = "Routing"
 
         self.addParameter(ParameterVector(self.ROADS, 'Roads', [ParameterVector.VECTOR_TYPE_LINE], False))
-        self.addParameter(ParameterVector(self.POINTS, 'Points', [ParameterVector.VECTOR_TYPE_POINT], False))
+        self.addParameter(ParameterVector(self.POINTS, 'Points (first 2 points)', [ParameterVector.VECTOR_TYPE_POINT], False))
         self.addParameter(ParameterBoolean(self.USE_TIED_POINTS, 'Use tied points', True))
 
         self.addOutput(OutputVector(self.OUTPUT_ROUTE, 'Route layer'))
@@ -52,8 +52,11 @@ class RoutingTwoPointsGeoAlgorithm(GeoAlgorithm):
         if points_layer.featureCount() < 2:
             raise GeoAlgorithmExecutionException("Not enough feature")
 
-        start = points_layer.getFeatures().next().geometry().asPoint()
-        end = points_layer.getFeatures().next().geometry().asPoint()
+        features = points_layer.getFeatures()
+        start_feature = features.next()
+        end_feature = features.next()
+        start = start_feature.geometry().asPoint()
+        end = end_feature.geometry().asPoint()
 
         tied_points = []
         if use_tied_points:
@@ -64,6 +67,6 @@ class RoutingTwoPointsGeoAlgorithm(GeoAlgorithm):
         layer = graph.route_between(start, end)
 
         for feature in layer.getFeatures():
-            route_layer.writte(feature)
+            route_layer.addFeature(feature)
 
         del route_layer

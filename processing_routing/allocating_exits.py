@@ -19,7 +19,8 @@ from Routing.core.graph import Graph
 class AllocatingExitsGeoAlgorithm(GeoAlgorithm):
 
     ROADS = 'ROADS'
-    POINTS = 'POINTS'
+    EXITS = 'EXITS'
+    IDP = 'IDP'
     OUTPUT_EXITS = 'EXITS_LAYER'
 
     def defineCharacteristics(self):
@@ -27,31 +28,39 @@ class AllocatingExitsGeoAlgorithm(GeoAlgorithm):
         self.group = "Routing"
 
         self.addParameter(ParameterVector(self.ROADS, 'Roads', [ParameterVector.VECTOR_TYPE_LINE], False))
-        self.addParameter(ParameterVector(self.POINTS, 'Exits', [ParameterVector.VECTOR_TYPE_POINT], False))
+        self.addParameter(ParameterVector(self.EXITS, 'Exits', [ParameterVector.VECTOR_TYPE_POINT], False))
+        self.addParameter(ParameterVector(self.IDP, 'IDP', [ParameterVector.VECTOR_TYPE_POINT], False))
 
         self.addOutput(OutputVector(self.OUTPUT_EXITS, 'New exits'))
 
     def processAlgorithm(self, progress):
         roads_layer = self.getParameterValue(self.ROADS)
         roads_layer = getObjectFromUri(roads_layer)
-        points_layer = self.getParameterValue(self.POINTS)
-        points_layer = getObjectFromUri(points_layer)
-        output_route = self.getOutputValue(self.OUTPUT_ROUTE)
+        exits_layer = self.getParameterValue(self.EXITS)
+        exits_layer = getObjectFromUri(exits_layer)
+        idp_layer = self.getParameterValue(self.IDP)
+        idp_layer = getObjectFromUri(idp_layer)
+
+        output_exits = self.getOutputValue(self.OUTPUT_EXITS)
+
+        tied_points = []
+        for f in idp_layer.getFeatures():
+            tied_points.append(f.geometry().asPoint())
+        for f in exits_layer.getFeatures():
+            tied_points.append(f.geometry().asPoint())
+
+        graph = Graph(roads_layer, tied_points)
+        layer = graph.cost_exits(idp_layer, exits_layer)
 
         route_layer = QgsVectorFileWriter(
-            output_route,
+            output_exits,
             None,
-            roads_layer.dataProvider().fields(),
-            QGis.WKBLineString,
+            layer.dataProvider().fields(),
+            QGis.WKBPoint,
             roads_layer.crs()
         )
 
-        if points_layer.featureCount() < 2:
-            raise GeoAlgorithmExecutionException("Not enough feature, minimum 2")
-
-        start = points_layer.getFeatures().next().geometry().asPoint()
-        end = points_layer.getFeatures().next().geometry().asPoint()
-        graph = Graph(roads_layer, [start, end])
-        #graph.compute_route(start, end)
+        for feature in layer.getFeatures():
+            route_layer.addFeature(feature)
 
         del route_layer

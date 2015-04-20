@@ -3,6 +3,7 @@ from processing.core.AlgorithmProvider import AlgorithmProvider
 
 from Routing.processing_routing.routable_layer import RoutableLayerGeoAlgorithm
 from Routing.processing_routing.routing_two_points import RoutingTwoPointsGeoAlgorithm
+from Routing.processing_routing.allocating_exits import AllocatingExitsGeoAlgorithm
 
 class ProcessingProvider(AlgorithmProvider):
 
@@ -13,6 +14,7 @@ class ProcessingProvider(AlgorithmProvider):
 
         # Load algorithms
         self.alglist = [RoutableLayerGeoAlgorithm(),
+                        AllocatingExitsGeoAlgorithm(),
                         RoutingTwoPointsGeoAlgorithm()]
 
         for alg in self.alglist:
