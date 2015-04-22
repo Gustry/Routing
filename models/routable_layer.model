@@ -129,21 +129,22 @@
                     "name": "QGISSPLITLINESWITHLINES_1", 
                     "paramsFolded": true, 
                     "outputs": {}, 
+                    "outputsFolded": true, 
                     "pos": {
                         "values": {
-                            "y": 499.0, 
-                            "x": 381.0
+                            "y": 477.0, 
+                            "x": 447.0
                         }, 
                         "class": "point"
                     }, 
-                    "outputsFolded": true, 
                     "dependencies": [], 
                     "params": {
                         "INPUT_B": {
                             "values": {
-                                "name": "VECTORLAYER_ROADS"
+                                "alg": "QGISDIFFERENCE_1", 
+                                "output": "OUTPUT"
                             }, 
-                            "class": "processing.modeler.ModelerAlgorithm.ValueFromInput"
+                            "class": "processing.modeler.ModelerAlgorithm.ValueFromOutput"
                         }, 
                         "INPUT_A": {
                             "values": {
@@ -309,8 +310,8 @@
                     }, 
                     "pos": {
                         "values": {
-                            "y": 575.0, 
-                            "x": 680.0
+                            "y": 554.0, 
+                            "x": 760.0
                         }, 
                         "class": "point"
                     }, 
