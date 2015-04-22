@@ -11,14 +11,14 @@ from qgis.core import (
 
 class Graph:
 
-    def __init__(self, layer, points=[]):
+    def __init__(self, layer, points=[], topology_tolerance=0):
 
         self.points = points
         self.layer = layer
         self.director = QgsLineVectorLayerDirector(layer, -1, '', '', '', 3)
         self.director.addProperter(QgsDistanceArcProperter())
         self.crs = self.layer.crs()
-        self.builder = QgsGraphBuilder(self.crs, topologyTolerance=0)
+        self.builder = QgsGraphBuilder(self.crs, topologyTolerance=topology_tolerance)
 
         self.tiedPoint = self.director.makeGraph(self.builder, self.points)
         self.graph = self.builder.graph()

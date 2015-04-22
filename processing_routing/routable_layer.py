@@ -24,17 +24,15 @@ class RoutableLayerGeoAlgorithm(GeoAlgorithm):
 
         self.addParameter(ParameterVector(self.ROADS, 'Roads', [ParameterVector.VECTOR_TYPE_LINE], False))
         self.addParameter(ParameterVector(self.FLOOD, 'Flood', [ParameterVector.VECTOR_TYPE_POLYGON], False))
-        self.addParameter(ParameterBoolean(self.DELETE_RINGS, 'Delete inner rings', True))
 
         self.addOutput(OutputVector(self.OUTPUT_ROUTABLE_LAYER, 'Routable layer'))
-        self.addOutput(OutputVector(self.OUTPUT_EXIT_LAYER, 'Exit layer'))
+        self.addOutput(OutputVector(self.OUTPUT_EXIT_LAYER, 'Unroutable layer'))
 
     def processAlgorithm(self, progress):
         roads_parameter = self.getParameterValue(self.ROADS)
         roads_layer = getObjectFromUri(roads_parameter)
         flood_parameter = self.getParameterValue(self.FLOOD)
         flood_layer = getObjectFromUri(flood_parameter)
-        delete_interior_rings = self.getParameterValue(self.DELETE_RINGS)
         output_routable_file = self.getOutputValue(self.OUTPUT_ROUTABLE_LAYER)
         output_exit_file = self.getOutputValue(self.OUTPUT_EXIT_LAYER)
 
@@ -50,11 +48,11 @@ class RoutableLayerGeoAlgorithm(GeoAlgorithm):
             output_exit_file,
             None,
             roads_layer.dataProvider().fields(),
-            QGis.WKBPoint,
+            QGis.WKBLineString,
             roads_layer.crs()
         )
 
-        graph = RoutableLayer(roads_layer, flood_layer, delete_interior_rings)
+        graph = RoutableLayer(roads_layer, flood_layer)
         exits_layer, routable_layer = graph.compute_without_index()
 
         if exits_layer.featureCount():

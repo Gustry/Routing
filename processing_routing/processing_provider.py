@@ -5,6 +5,7 @@ from Routing.processing_routing.routable_layer import RoutableLayerGeoAlgorithm
 from Routing.processing_routing.routing_two_points import RoutingTwoPointsGeoAlgorithm
 from Routing.processing_routing.allocating_exits import AllocatingExitsGeoAlgorithm
 from Routing.processing_routing.DeleteHoles import DeleteHoles
+from Routing.processing_routing.LinesIntersection import LinesIntersection
 
 class ProcessingProvider(AlgorithmProvider):
 
@@ -17,6 +18,7 @@ class ProcessingProvider(AlgorithmProvider):
         self.alglist = [RoutableLayerGeoAlgorithm(),
                         AllocatingExitsGeoAlgorithm(),
                         DeleteHoles(),
+                        LinesIntersection(),
                         RoutingTwoPointsGeoAlgorithm()]
 
         for alg in self.alglist:
