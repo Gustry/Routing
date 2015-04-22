@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from processing.core.AlgorithmProvider import AlgorithmProvider
 
-from Routing.processing_routing.routable_layer import RoutableLayerGeoAlgorithm
 from Routing.processing_routing.routing_two_points import RoutingTwoPointsGeoAlgorithm
 from Routing.processing_routing.allocating_exits import AllocatingExitsGeoAlgorithm
 from Routing.processing_routing.DeleteHoles import DeleteHoles
@@ -15,8 +14,7 @@ class ProcessingProvider(AlgorithmProvider):
         self.activate = True
 
         # Load algorithms
-        self.alglist = [RoutableLayerGeoAlgorithm(),
-                        AllocatingExitsGeoAlgorithm(),
+        self.alglist = [AllocatingExitsGeoAlgorithm(),
                         DeleteHoles(),
                         LinesIntersection(),
                         RoutingTwoPointsGeoAlgorithm()]
