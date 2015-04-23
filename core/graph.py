@@ -14,8 +14,11 @@ from qgis.core import (
     QgsFeature,
     QgsPoint,
     QgsMapLayerRegistry,
+    QgsField,
     QgsSpatialIndex
 )
+
+from PyQt4.QtCore import QVariant
 
 from processing.core.GeoAlgorithmExecutionException import \
     GeoAlgorithmExecutionException
@@ -33,16 +36,27 @@ class Graph:
         self.graph = self.builder.graph()
         self.dijkstra_results = {}
         self.vertices = QgsSpatialIndex()
-        self.vertices_layer = QgsVectorLayer("Point", "Tied", "memory")
-        self.vertices_layer_dp = self.vertices_layer.dataProvider()
+        self.vertices_layer = None
+        self.vertices_layer_dp = None
         self._fill_layer()
 
     def _fill_layer(self):
+        self.vertices_layer = QgsVectorLayer("Point", "Tied", "memory")
+        self.vertices_layer_dp = self.vertices_layer.dataProvider()
+
+        self.vertices_layer_dp.addAttributes([
+            QgsField("id_vertex", QVariant.Int),
+            QgsField("in_arcs_nb", QVariant.Int),
+            QgsField("out_arcs_nb", QVariant.Int),
+            QgsField("arcs_nb", QVariant.Int)
+        ])
+        self.vertices_layer.updateFields()
+
         for vertex in self.get_id_vertices():
             self.vertices_layer_dp.addFeatures([
                 self.get_vertex_feature(vertex)])
 
-        self.vertices_layer_dp.updateExtents()
+        self.vertices_layer.updateExtents()
 
         for feature in self.vertices_layer.getFeatures():
             self.vertices.insertFeature(feature)
@@ -110,6 +124,10 @@ class Graph:
         points = [point_start, point_end]
         return QgsGeometry.fromPolyline(points)
 
+    def get_arc_properties(self, id_arc):
+        arc = self.get_arc(id_arc)
+        return arc.properties()
+
     def get_arc_feature(self, id_arc):
         """Get the feature of an arc according to an id.
         :return: The feature.
@@ -117,6 +135,12 @@ class Graph:
         """
         feature = QgsFeature()
         geom = self.get_arc_line(id_arc)
+        out_vertex_id = self.graph.arc(id_arc).outVertex()
+        in_vertex_id = self.graph.arc(id_arc).inVertex()
+        attrs = [id_arc] + self.get_arc_properties(id_arc)
+        attrs.append(in_vertex_id)
+        attrs.append(out_vertex_id)
+        feature.setAttributes(attrs)
         feature.setGeometry(geom)
         return feature
 
@@ -155,6 +179,15 @@ class Graph:
         """
         feature = QgsFeature()
         geom = self.get_vertex_geom(id_vertex)
+        vertex = self.get_vertex(id_vertex)
+        in_arcs_id = vertex.inArc()
+        out_arcs_id = vertex.outArc()
+        attrs = [
+            id_vertex,
+            len(in_arcs_id),
+            len(out_arcs_id),
+            len(in_arcs_id) + len(out_arcs_id)]
+        feature.setAttributes(attrs)
         feature.setGeometry(geom)
         return feature
 
@@ -262,11 +295,18 @@ class Graph:
         """
         layer = QgsVectorLayer("LineString", "Lines", "memory")
         dp = layer.dataProvider()
+        dp.addAttributes([
+            QgsField("id_arc", QVariant.Int),
+            QgsField("cost", QVariant.Double),
+            QgsField("in_vertex", QVariant.Int),
+            QgsField("out_vertex", QVariant.Int),
+        ])
+        layer.updateFields()
 
         for edge_id in self.get_id_arcs():
             dp.addFeatures([self.get_arc_feature(edge_id)])
 
-        dp.updateExtents()
+        layer.updateExtents()
         QgsMapLayerRegistry.instance().addMapLayers([layer])
 
 
