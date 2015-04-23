@@ -93,6 +93,12 @@ class Graph:
         """
         return self.graph.arc(id_arc)
 
+    def get_in_vertex_id(self, id_arc):
+        return self.graph.arc(id_arc).inVertex()
+
+    def get_out_vertex_id(self, id_arc):
+        return self.graph.arc(id_arc).outVertex()
+
     def get_arc_line(self, id_arc):
         """Get the geometry of an arc according to an id.
         :return: The geometry.
@@ -218,6 +224,34 @@ class Graph:
         tree, cost = self.dijkstra(vertex_start_id)
         return tree[vertex_stop_id]
 
+    def route_between(self, start, end):
+        if self.cost_between(start, end) < 0:
+            raise GeoAlgorithmExecutionException("Path not found")
+
+        route_layer = QgsVectorLayer("LineString", "Line", "memory")
+        data_provider = route_layer.dataProvider()
+
+        tree, cost = self.dijkstra(start)
+        vertex_start_id = self.get_nearest_vertex_id(start)
+        vertex_stop_id = self.get_nearest_vertex_id(end)
+        current_vertex = vertex_stop_id
+
+        while current_vertex != vertex_start_id:
+            arc_id = tree[current_vertex]
+            feature = self.get_arc_feature(arc_id)
+            data_provider.addFeatures([feature])
+            current_vertex = self.get_out_vertex_id(arc_id)
+
+        data_provider.updateExtents()
+        return route_layer
+
+    def route_info_between(self, start, end):
+        return self.cost_between(start, end), self.route_between(start, end)
+
+    def show_route_between(self, start, end):
+        layer = self.route_between(start, end)
+        QgsMapLayerRegistry.instance().addMapLayers([layer])
+
     def show_vertices(self):
         """DEBUG : show all vertices.
         """
@@ -266,53 +300,3 @@ class Graph:
 
         pr_exit.updateExtents()
         return exit_layer
-
-    def route_between(self, start, end):
-
-        vertex_start_id = self.get_vertex(start)
-        vertex_stop_id = self.get_vertex(end)
-        tree, cost = self.compute_dijkstra(start)
-
-        layer_way = QgsVectorLayer("LineString?crs=epsg:4326", "Line", "memory")
-        pr_way = layer_way.dataProvider()
-
-        if tree[vertex_stop_id] == -1:
-            raise GeoAlgorithmExecutionException("Path not found")
-            return layer_way
-
-        current_vertex = vertex_stop_id
-
-        while current_vertex != vertex_start_id:
-            in_vertex_id = self.graph.arc(tree[current_vertex]).inVertex()
-            out_vertex_id = self.graph.arc(tree[current_vertex]).outVertex()
-
-            in_vertex = self.graph.vertex(in_vertex_id)
-            out_vertex = self.graph.vertex(out_vertex_id)
-
-            points = [in_vertex.point(), out_vertex.point()]
-
-            fet = QgsFeature()
-            fet.setGeometry(QgsGeometry.fromPolyline(points))
-            pr_way.addFeatures([fet])
-
-            current_vertex = out_vertex_id
-
-        layer_way.updateExtents()
-        return layer_way
-
-    def show(self, point):
-
-        nodes = QgsVectorLayer("Point", 'points', "memory")
-        nodes_dp = nodes.dataProvider()
-
-        f = QgsFeature()
-        f.setGeometry(QgsGeometry.fromPoint(point))
-
-        nearest = self.closest_vertex(point).point()
-        f2 = QgsFeature()
-        f2.setGeometry(QgsGeometry.fromPoint(nearest))
-
-        nodes_dp.addFeatures([f, f2])
-        nodes.updateExtents()
-
-        QgsMapLayerRegistry.instance().addMapLayers([nodes])
