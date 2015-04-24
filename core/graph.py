@@ -23,13 +23,18 @@ from PyQt4.QtCore import QVariant
 from processing.core.GeoAlgorithmExecutionException import \
     GeoAlgorithmExecutionException
 
+from properter import MultiplyProperter
 
 class Graph:
 
-    def __init__(self, layer, points=[], topology_tolerance=0):
+    def __init__(self, layer, points=[], coef=None, topology_tolerance=0):
         self.layer = layer
         self.director = QgsLineVectorLayerDirector(layer, -1, '', '', '', 3)
         self.director.addProperter(QgsDistanceArcProperter())
+        self.criterion = 1
+        if coef:
+            self.criterion += 1
+            self.director.addProperter(MultiplyProperter(coef, 1))
         self.crs = self.layer.crs()
         self.builder = QgsGraphBuilder(self.crs, topologyTolerance=topology_tolerance)
         self.tiedPoint = self.director.makeGraph(self.builder, points)
@@ -232,20 +237,24 @@ class Graph:
 
         return closest_vertex
 
-    def dijkstra(self, start):
+    def dijkstra(self, start, criterion=0):
         """Compute dijkstra from a start point.
         :param start The start.
         :type start QgsPoint or int or QgsGraphVertex
         :return Dijkstra.
         :rtype tab
         """
+
+        if criterion > self.criterion:
+            raise GeoAlgorithmExecutionException('Property doesn\'t exist')
+
         if start not in self.dijkstra_results.keys():
             vertex_id = self.get_nearest_vertex_id(start)
-            results = QgsGraphAnalyzer.dijkstra(self.graph, vertex_id, 0)
+            results = QgsGraphAnalyzer.dijkstra(self.graph, vertex_id, criterion)
             self.dijkstra_results[start] = results
         return self.dijkstra_results[start]
 
-    def cost_between(self, start, end):
+    def cost_between(self, start, end, criterion=0):
         """Compute cost between two points.
         :type start QgsPoint or int or QgsGraphVertex
         :type end QgsPoint or int or QgsGraphVertex
@@ -254,17 +263,18 @@ class Graph:
         """
         vertex_start_id = self.get_nearest_vertex_id(start)
         vertex_stop_id = self.get_nearest_vertex_id(end)
-        tree, cost = self.dijkstra(vertex_start_id)
-        return tree[vertex_stop_id]
+        tree, cost = self.dijkstra(vertex_start_id, criterion)
+        return cost[vertex_stop_id]
 
-    def route_between(self, start, end):
-        if self.cost_between(start, end) < 0:
+    def route_between(self, start, end, criterion=0):
+        cost = self.cost_between(start, end, criterion)
+        if cost < 0:
             raise GeoAlgorithmExecutionException("Path not found")
 
-        route_layer = QgsVectorLayer("LineString", "Line", "memory")
+        route_layer = QgsVectorLayer("LineString", "Route %s" % cost, "memory")
         data_provider = route_layer.dataProvider()
 
-        tree, cost = self.dijkstra(start)
+        tree, cost = self.dijkstra(start, criterion)
         vertex_start_id = self.get_nearest_vertex_id(start)
         vertex_stop_id = self.get_nearest_vertex_id(end)
         current_vertex = vertex_stop_id
@@ -278,11 +288,11 @@ class Graph:
         data_provider.updateExtents()
         return route_layer
 
-    def route_info_between(self, start, end):
-        return self.cost_between(start, end), self.route_between(start, end)
+    def route_info_between(self, start, end, criterion=0):
+        return self.cost_between(start, end, criterion), self.route_between(start, end, criterion)
 
-    def show_route_between(self, start, end):
-        layer = self.route_between(start, end)
+    def show_route_between(self, start, end, criterion=0):
+        layer = self.route_between(start, end, criterion)
         QgsMapLayerRegistry.instance().addMapLayers([layer])
 
     def show_vertices(self):
@@ -295,12 +305,14 @@ class Graph:
         """
         layer = QgsVectorLayer("LineString", "Lines", "memory")
         dp = layer.dataProvider()
-        dp.addAttributes([
-            QgsField("id_arc", QVariant.Int),
-            QgsField("cost", QVariant.Double),
-            QgsField("in_vertex", QVariant.Int),
-            QgsField("out_vertex", QVariant.Int),
-        ])
+        attrs = []
+        attrs.append(QgsField("id_arc", QVariant.Int))
+        for i in range(0,self.criterion):
+            attrs.append(QgsField("cost_%s" % i, QVariant.Double))
+        attrs.append(QgsField("in_vertex", QVariant.Int))
+        attrs.append(QgsField("out_vertex", QVariant.Int))
+
+        dp.addAttributes(attrs)
         layer.updateFields()
 
         for edge_id in self.get_id_arcs():
@@ -309,34 +321,41 @@ class Graph:
         layer.updateExtents()
         QgsMapLayerRegistry.instance().addMapLayers([layer])
 
+    def cost_exits(self, idp_layer, exit_layer, criterion=0):
+        idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
+        dp = idp_exit_layer.dataProvider()
+        dp.addAttributes([
+            QgsField("id_idp", QVariant.Int),
+            QgsField("cost", QVariant.Double),
+        ])
 
-
-
-    def cost_exits(self, idps, exits):
-
-        exit_layer = QgsVectorLayer("Point?crs=epsg:4326&field=id_idp:integer&field=distance:integer", "Exits", "memory")
-        pr_exit = exit_layer.dataProvider()
-
-        for exit in exits.getFeatures():
+        for exit in exit_layer.getFeatures():
             idp_id = -1
             min_cost = -1
-            for idp in idps.getFeatures():
-                cost = self.cost_between(idp.geometry().asPoint(), exit.geometry().asPoint())
-                print "%s : %s ( %s ) -> %s" % (exit.id(), idp.id(), idp.geometry().asPoint(), cost)
+            for idp in idp_layer.getFeatures():
+                cost = self.cost_between(
+                    exit.geometry().asPoint(),
+                    idp.geometry().asPoint(),
+                    criterion)
+
+                if cost >= 0:
+                    self.show_route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
+                    # print self.route_info_between(idp.geometry().asPoint(), exit.geometry().asPoint())
+
+                print "%s ( %s ) -> %s ( %s ) = %s" % (exit.id(), exit.geometry().asPoint(), idp.id(), idp.geometry().asPoint(), cost)
+
                 if cost >= 0:
                     if cost < min_cost or min_cost <= 0:
                         min_cost = cost
                         idp_id = idp.id()
-
                         #l = self.route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
                         #QgsMapLayerRegistry.instance().addMapLayers([l])
 
             f = QgsFeature()
             attrs = [idp_id, min_cost]
-            print attrs
             f.setAttributes(attrs)
             f.setGeometry(exit.geometry())
-            pr_exit.addFeatures([f])
+            dp.addFeatures([f])
 
-        pr_exit.updateExtents()
-        return exit_layer
+        idp_exit_layer.updateExtents()
+        return idp_exit_layer
