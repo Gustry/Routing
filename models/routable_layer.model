@@ -54,6 +54,56 @@
                     }
                 }, 
                 "class": "processing.modeler.ModelerAlgorithm.ModelerParameter"
+            }, 
+            "STRING_COEFDRY": {
+                "values": {
+                    "pos": {
+                        "values": {
+                            "y": 452.0, 
+                            "x": 369.0
+                        }, 
+                        "class": "point"
+                    }, 
+                    "param": {
+                        "values": {
+                            "isAdvanced": false, 
+                            "name": "STRING_COEFDRY", 
+                            "default": "1", 
+                            "value": null, 
+                            "multiline": false, 
+                            "hidden": false, 
+                            "optional": false, 
+                            "description": "coef_dry"
+                        }, 
+                        "class": "processing.core.parameters.ParameterString"
+                    }
+                }, 
+                "class": "processing.modeler.ModelerAlgorithm.ModelerParameter"
+            }, 
+            "STRING_COEFEDGE": {
+                "values": {
+                    "pos": {
+                        "values": {
+                            "y": 636.0, 
+                            "x": 120.0
+                        }, 
+                        "class": "point"
+                    }, 
+                    "param": {
+                        "values": {
+                            "isAdvanced": false, 
+                            "name": "STRING_COEFEDGE", 
+                            "default": "3", 
+                            "value": null, 
+                            "multiline": false, 
+                            "hidden": false, 
+                            "optional": false, 
+                            "description": "coef_edge"
+                        }, 
+                        "class": "processing.core.parameters.ParameterString"
+                    }
+                }, 
+                "class": "processing.modeler.ModelerAlgorithm.ModelerParameter"
             }
         }, 
         "helpContent": {}, 
@@ -67,8 +117,8 @@
                     "outputs": {}, 
                     "pos": {
                         "values": {
-                            "y": 273.0, 
-                            "x": 327.0
+                            "y": 289.0, 
+                            "x": 299.0
                         }, 
                         "class": "point"
                     }, 
@@ -102,8 +152,8 @@
                     "outputs": {}, 
                     "pos": {
                         "values": {
-                            "y": 383.0, 
-                            "x": 138.0
+                            "y": 448.0, 
+                            "x": 137.0
                         }, 
                         "class": "point"
                     }, 
@@ -132,8 +182,8 @@
                     "outputsFolded": true, 
                     "pos": {
                         "values": {
-                            "y": 477.0, 
-                            "x": 447.0
+                            "y": 666.0, 
+                            "x": 695.0
                         }, 
                         "class": "point"
                     }, 
@@ -141,15 +191,14 @@
                     "params": {
                         "INPUT_B": {
                             "values": {
-                                "alg": "QGISDIFFERENCE_1", 
-                                "output": "OUTPUT"
+                                "name": "VECTORLAYER_ROADS"
                             }, 
-                            "class": "processing.modeler.ModelerAlgorithm.ValueFromOutput"
+                            "class": "processing.modeler.ModelerAlgorithm.ValueFromInput"
                         }, 
                         "INPUT_A": {
                             "values": {
-                                "alg": "QGISPOLYGONSTOLINES_1", 
-                                "output": "OUTPUT"
+                                "alg": "QGISFIELDCALCULATOR_1", 
+                                "output": "OUTPUT_LAYER"
                             }, 
                             "class": "processing.modeler.ModelerAlgorithm.ValueFromOutput"
                         }
@@ -170,8 +219,8 @@
                                 "description": "Exits", 
                                 "pos": {
                                     "values": {
-                                        "y": 505.0, 
-                                        "x": 1036.0
+                                        "y": 489.0, 
+                                        "x": 1165.0
                                     }, 
                                     "class": "point"
                                 }
@@ -181,8 +230,8 @@
                     }, 
                     "pos": {
                         "values": {
-                            "y": 454.0, 
-                            "x": 785.0
+                            "y": 412.0, 
+                            "x": 889.0
                         }, 
                         "class": "point"
                     }, 
@@ -222,8 +271,8 @@
                                 "description": "Flooded", 
                                 "pos": {
                                     "values": {
-                                        "y": 374.0, 
-                                        "x": 1030.0
+                                        "y": 305.0, 
+                                        "x": 1149.0
                                     }, 
                                     "class": "point"
                                 }
@@ -233,8 +282,8 @@
                     }, 
                     "pos": {
                         "values": {
-                            "y": 281.0, 
-                            "x": 586.0
+                            "y": 266.0, 
+                            "x": 684.0
                         }, 
                         "class": "point"
                     }, 
@@ -258,6 +307,86 @@
                     "active": true, 
                     "consoleName": "qgis:intersection", 
                     "description": "Intersection"
+                }, 
+                "class": "processing.modeler.ModelerAlgorithm.Algorithm"
+            }, 
+            "QGISFIELDCALCULATOR_1": {
+                "values": {
+                    "name": "QGISFIELDCALCULATOR_1", 
+                    "paramsFolded": true, 
+                    "outputs": {}, 
+                    "pos": {
+                        "values": {
+                            "y": 617.0, 
+                            "x": 384.0
+                        }, 
+                        "class": "point"
+                    }, 
+                    "outputsFolded": true, 
+                    "dependencies": [], 
+                    "params": {
+                        "FIELD_TYPE": 2, 
+                        "NEW_FIELD": true, 
+                        "INPUT_LAYER": {
+                            "values": {
+                                "alg": "QGISPOLYGONSTOLINES_1", 
+                                "output": "OUTPUT"
+                            }, 
+                            "class": "processing.modeler.ModelerAlgorithm.ValueFromOutput"
+                        }, 
+                        "FIELD_PRECISION": 3.0, 
+                        "FIELD_LENGTH": 10.0, 
+                        "FORMULA": {
+                            "values": {
+                                "name": "STRING_COEFEDGE"
+                            }, 
+                            "class": "processing.modeler.ModelerAlgorithm.ValueFromInput"
+                        }, 
+                        "FIELD_NAME": "multiply"
+                    }, 
+                    "active": true, 
+                    "consoleName": "qgis:fieldcalculator", 
+                    "description": "Field calculator"
+                }, 
+                "class": "processing.modeler.ModelerAlgorithm.Algorithm"
+            }, 
+            "QGISFIELDCALCULATOR_2": {
+                "values": {
+                    "name": "QGISFIELDCALCULATOR_2", 
+                    "paramsFolded": true, 
+                    "outputs": {}, 
+                    "pos": {
+                        "values": {
+                            "y": 489.0, 
+                            "x": 707.0
+                        }, 
+                        "class": "point"
+                    }, 
+                    "outputsFolded": true, 
+                    "dependencies": [], 
+                    "params": {
+                        "FIELD_TYPE": 2, 
+                        "NEW_FIELD": true, 
+                        "INPUT_LAYER": {
+                            "values": {
+                                "alg": "QGISDIFFERENCE_1", 
+                                "output": "OUTPUT"
+                            }, 
+                            "class": "processing.modeler.ModelerAlgorithm.ValueFromOutput"
+                        }, 
+                        "FIELD_PRECISION": 3.0, 
+                        "FIELD_LENGTH": 10.0, 
+                        "FORMULA": {
+                            "values": {
+                                "name": "STRING_COEFDRY"
+                            }, 
+                            "class": "processing.modeler.ModelerAlgorithm.ValueFromInput"
+                        }, 
+                        "FIELD_NAME": "multiply"
+                    }, 
+                    "active": true, 
+                    "consoleName": "qgis:fieldcalculator", 
+                    "description": "Field calculator"
                 }, 
                 "class": "processing.modeler.ModelerAlgorithm.Algorithm"
             }, 
@@ -299,8 +428,8 @@
                                 "description": "Routable", 
                                 "pos": {
                                     "values": {
-                                        "y": 597.0, 
-                                        "x": 1033.0
+                                        "y": 790.0, 
+                                        "x": 1179.0
                                     }, 
                                     "class": "point"
                                 }
@@ -310,8 +439,8 @@
                     }, 
                     "pos": {
                         "values": {
-                            "y": 554.0, 
-                            "x": 760.0
+                            "y": 733.0, 
+                            "x": 1009.0
                         }, 
                         "class": "point"
                     }, 
@@ -327,8 +456,8 @@
                         }, 
                         "LAYER1": {
                             "values": {
-                                "alg": "QGISDIFFERENCE_1", 
-                                "output": "OUTPUT"
+                                "alg": "QGISFIELDCALCULATOR_2", 
+                                "output": "OUTPUT_LAYER"
                             }, 
                             "class": "processing.modeler.ModelerAlgorithm.ValueFromOutput"
                         }
