@@ -99,7 +99,7 @@ class Graph:
         nb_edges = self.graph.arcCount()
         return xrange(0, nb_edges)
 
-    def get_arc_count(self):
+    def arc_count(self):
         """Get the number of arc.
         :return: The number of arc.
         :rtype: int
@@ -154,7 +154,7 @@ class Graph:
         feature.setGeometry(geom)
         return feature
 
-    def get_vertex_count(self):
+    def vertex_count(self):
         """Get the number of vertices.
         :return: The number of vertices.
         :rtype: int
@@ -375,13 +375,11 @@ class Graph:
                     if cost < min_cost or min_cost <= 0:
                         min_cost = cost
                         idp_id = idp.id()
-                        #self.show_route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
 
             if min_cost > 0:
                 request = QgsFeatureRequest().setFilterFid(idp_id)
                 idp = idp_layer.getFeatures(request).next()
 
-                #print "%s ( %s ) -> %s ( %s ) = %s" % (exit.id(), exit.geometry().asPoint(), idp.id(), idp.geometry().asPoint(), cost)
                 f = QgsFeature()
                 attrs = [idp_id, min_cost]
                 f.setAttributes(attrs)
@@ -394,9 +392,6 @@ class Graph:
                 r_feature.setGeometry(geom_route)
                 r_feature.setAttributes(attrs)
                 dp_route.addFeatures([r_feature])
-
-                # Show min route
-                # self.show_route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
 
         idp_exit_layer.updateExtents()
         route_layer.updateExtents()

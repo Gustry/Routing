@@ -179,7 +179,6 @@
                     "name": "QGISSPLITLINESWITHLINES_1", 
                     "paramsFolded": true, 
                     "outputs": {}, 
-                    "outputsFolded": true, 
                     "pos": {
                         "values": {
                             "y": 666.0, 
@@ -187,6 +186,7 @@
                         }, 
                         "class": "point"
                     }, 
+                    "outputsFolded": true, 
                     "dependencies": [], 
                     "params": {
                         "INPUT_B": {
@@ -315,6 +315,7 @@
                     "name": "QGISFIELDCALCULATOR_1", 
                     "paramsFolded": true, 
                     "outputs": {}, 
+                    "outputsFolded": true, 
                     "pos": {
                         "values": {
                             "y": 617.0, 
@@ -322,10 +323,9 @@
                         }, 
                         "class": "point"
                     }, 
-                    "outputsFolded": true, 
                     "dependencies": [], 
                     "params": {
-                        "FIELD_TYPE": 2, 
+                        "FIELD_TYPE": 0, 
                         "NEW_FIELD": true, 
                         "INPUT_LAYER": {
                             "values": {
@@ -355,6 +355,7 @@
                     "name": "QGISFIELDCALCULATOR_2", 
                     "paramsFolded": true, 
                     "outputs": {}, 
+                    "outputsFolded": true, 
                     "pos": {
                         "values": {
                             "y": 489.0, 
@@ -362,10 +363,9 @@
                         }, 
                         "class": "point"
                     }, 
-                    "outputsFolded": true, 
                     "dependencies": [], 
                     "params": {
-                        "FIELD_TYPE": 2, 
+                        "FIELD_TYPE": 1, 
                         "NEW_FIELD": true, 
                         "INPUT_LAYER": {
                             "values": {

@@ -24,6 +24,7 @@ class AllocatingExitsGeoAlgorithm(GeoAlgorithm):
     EXITS = 'EXITS'
     IDP = 'IDP'
     OUTPUT_EXITS = 'EXITS_LAYER'
+    OUTPUT_ROUTE = 'ROUTE_LAYER'
 
     def defineCharacteristics(self):
         self.name = "Allocating exits"
@@ -31,11 +32,12 @@ class AllocatingExitsGeoAlgorithm(GeoAlgorithm):
 
         self.addParameter(ParameterVector(self.ROADS, 'Roads', [ParameterVector.VECTOR_TYPE_LINE], False))
         self.addParameter(ParameterNumber(self.CRITERION, 'Num criter', default=0))
-        self.addParameter(ParameterTableField(self.FIELD, self.tr('Coef field'), self.ROADS, True))
+        self.addParameter(ParameterTableField(self.FIELD, self.tr('Coef field'), self.ROADS, ParameterTableField.DATA_TYPE_NUMBER, optional=True))
         self.addParameter(ParameterVector(self.EXITS, 'Exits', [ParameterVector.VECTOR_TYPE_POINT], False))
         self.addParameter(ParameterVector(self.IDP, 'IDP', [ParameterVector.VECTOR_TYPE_POINT], False))
 
         self.addOutput(OutputVector(self.OUTPUT_EXITS, 'New exits'))
+        self.addOutput(OutputVector(self.OUTPUT_ROUTE, 'Routes'))
 
     def processAlgorithm(self, progress):
         roads_layer = self.getParameterValue(self.ROADS)
@@ -48,6 +50,7 @@ class AllocatingExitsGeoAlgorithm(GeoAlgorithm):
         idp_layer = getObjectFromUri(idp_layer)
 
         output_exits = self.getOutputValue(self.OUTPUT_EXITS)
+        output_routes = self.getOutputValue(self.OUTPUT_ROUTE)
 
         tied_points = []
         for f in idp_layer.getFeatures():
@@ -56,17 +59,30 @@ class AllocatingExitsGeoAlgorithm(GeoAlgorithm):
             tied_points.append(f.geometry().asPoint())
 
         graph = Graph(roads_layer, tied_points)
-        layer = graph.cost_exits(idp_layer, exits_layer, num_criter)
+        exit, route = graph.cost_exits(idp_layer, exits_layer, num_criter)
 
-        route_layer = QgsVectorFileWriter(
+        exit_layer = QgsVectorFileWriter(
             output_exits,
             None,
-            layer.dataProvider().fields(),
+            exit.dataProvider().fields(),
             QGis.WKBPoint,
             roads_layer.crs()
         )
 
-        for feature in layer.getFeatures():
+        for feature in exit.getFeatures():
+            exit_layer.addFeature(feature)
+
+        del exit_layer
+
+        route_layer = QgsVectorFileWriter(
+            output_routes,
+            None,
+            route.dataProvider().fields(),
+            QGis.WKBMultiLineStrings,
+            roads_layer.crs()
+        )
+
+        for feature in route.getFeatures():
             route_layer.addFeature(feature)
 
         del route_layer
