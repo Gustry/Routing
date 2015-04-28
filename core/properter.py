@@ -1,5 +1,4 @@
 from qgis.networkanalysis import QgsArcProperter
-from unicodedata import numeric
 
 
 class MultiplyProperter(QgsArcProperter):
@@ -10,7 +9,7 @@ class MultiplyProperter(QgsArcProperter):
 
     def property(self, distance, feature):
         attrs = feature.attributes()
-        val = distance * (numeric(attrs[self.attribute_id], 10) + 7)
+        val = distance * float(attrs[self.attribute_id])
         return val
 
     def requiredAttributes(self):

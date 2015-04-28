@@ -15,6 +15,7 @@ from qgis.core import (
     QgsPoint,
     QgsMapLayerRegistry,
     QgsField,
+    QgsFeatureRequest,
     QgsSpatialIndex
 )
 
@@ -118,16 +119,20 @@ class Graph:
     def get_out_vertex_id(self, id_arc):
         return self.graph.arc(id_arc).outVertex()
 
-    def get_arc_line(self, id_arc):
+    def get_arc_linestring(self, id_arc):
+        arc = self.get_arc(id_arc)
+        point_start = self.get_vertex_point(arc.inVertex())
+        point_end = self.get_vertex_point(arc.outVertex())
+        linestring = [point_start, point_end]
+        return linestring
+
+    def get_arc_geom(self, id_arc):
         """Get the geometry of an arc according to an id.
         :return: The geometry.
         :rtype: QgsGeometry
         """
-        arc = self.get_arc(id_arc)
-        point_start = self.get_vertex_point(arc.inVertex())
-        point_end = self.get_vertex_point(arc.outVertex())
-        points = [point_start, point_end]
-        return QgsGeometry.fromPolyline(points)
+        linestring = self.get_arc_linestring(id_arc)
+        return QgsGeometry.fromPolyline(linestring)
 
     def get_arc_properties(self, id_arc):
         arc = self.get_arc(id_arc)
@@ -139,7 +144,7 @@ class Graph:
         :rtype: QgsFeature
         """
         feature = QgsFeature()
-        geom = self.get_arc_line(id_arc)
+        geom = self.get_arc_geom(id_arc)
         out_vertex_id = self.graph.arc(id_arc).outVertex()
         in_vertex_id = self.graph.arc(id_arc).inVertex()
         attrs = [id_arc] + self.get_arc_properties(id_arc)
@@ -288,6 +293,25 @@ class Graph:
         data_provider.updateExtents()
         return route_layer
 
+    def route_between_multiline(self, start, end, criterion=0):
+        """Duplicate as above"""
+        cost = self.cost_between(start, end, criterion)
+        if cost < 0:
+            raise GeoAlgorithmExecutionException("Path not found")
+
+        tree, cost = self.dijkstra(start, criterion)
+        vertex_start_id = self.get_nearest_vertex_id(start)
+        vertex_stop_id = self.get_nearest_vertex_id(end)
+        current_vertex = vertex_stop_id
+
+        multigeom = []
+        while current_vertex != vertex_start_id:
+            arc_id = tree[current_vertex]
+            multigeom.append(self.get_arc_linestring(arc_id))
+            current_vertex = self.get_out_vertex_id(arc_id)
+
+        return QgsGeometry().fromMultiPolyline(multigeom)
+
     def route_info_between(self, start, end, criterion=0):
         return self.cost_between(start, end, criterion), self.route_between(start, end, criterion)
 
@@ -328,6 +352,15 @@ class Graph:
             QgsField("id_idp", QVariant.Int),
             QgsField("cost", QVariant.Double),
         ])
+        idp_exit_layer.updateFields()
+
+        route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
+        dp_route = route_layer.dataProvider()
+        dp_route.addAttributes([
+            QgsField("id_idp", QVariant.Int),
+            QgsField("cost", QVariant.Double),
+        ])
+        route_layer.updateFields()
 
         for exit in exit_layer.getFeatures():
             idp_id = -1
@@ -339,23 +372,32 @@ class Graph:
                     criterion)
 
                 if cost >= 0:
-                    self.show_route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
-                    # print self.route_info_between(idp.geometry().asPoint(), exit.geometry().asPoint())
-
-                print "%s ( %s ) -> %s ( %s ) = %s" % (exit.id(), exit.geometry().asPoint(), idp.id(), idp.geometry().asPoint(), cost)
-
-                if cost >= 0:
                     if cost < min_cost or min_cost <= 0:
                         min_cost = cost
                         idp_id = idp.id()
-                        #l = self.route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
-                        #QgsMapLayerRegistry.instance().addMapLayers([l])
+                        #self.show_route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
 
-            f = QgsFeature()
-            attrs = [idp_id, min_cost]
-            f.setAttributes(attrs)
-            f.setGeometry(exit.geometry())
-            dp.addFeatures([f])
+            if min_cost > 0:
+                request = QgsFeatureRequest().setFilterFid(idp_id)
+                idp = idp_layer.getFeatures(request).next()
+
+                #print "%s ( %s ) -> %s ( %s ) = %s" % (exit.id(), exit.geometry().asPoint(), idp.id(), idp.geometry().asPoint(), cost)
+                f = QgsFeature()
+                attrs = [idp_id, min_cost]
+                f.setAttributes(attrs)
+                f.setGeometry(exit.geometry())
+                dp.addFeatures([f])
+
+                geom_route = self.route_between_multiline(idp.geometry().asPoint(), exit.geometry().asPoint(), criterion)
+                r_feature = QgsFeature()
+                attrs = [idp_id, min_cost]
+                r_feature.setGeometry(geom_route)
+                r_feature.setAttributes(attrs)
+                dp_route.addFeatures([r_feature])
+
+                # Show min route
+                # self.show_route_between(idp.geometry().asPoint(), exit.geometry().asPoint())
 
         idp_exit_layer.updateExtents()
-        return idp_exit_layer
+        route_layer.updateExtents()
+        return idp_exit_layer, route_layer
