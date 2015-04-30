@@ -50,10 +50,14 @@ class Graph:
         self.tiedPoint = self.director.makeGraph(self.builder, self.points)
         self.graph = self.builder.graph()
 
-    def add_cost(self, name, cost_stategy):
+    def add_cost(self, name, cost_stategy, build=False):
         if name not in self.properties:
             self.director.addProperter(cost_stategy)
             self.properties.append(name)
+
+            if build:
+                self.build()
+
             return True
         else:
             return False
