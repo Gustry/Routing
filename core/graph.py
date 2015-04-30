@@ -292,6 +292,7 @@ class Graph:
         cost = route[2]
 
         route_layer = QgsVectorLayer("LineString", "Route %s" % cost, "memory")
+        route_layer.setCrs(self.crs)
         data_provider = route_layer.dataProvider()
 
         data_provider.addAttributes([
@@ -318,6 +319,7 @@ class Graph:
         """DEBUG : show all vertices.
         """
         layer = QgsVectorLayer("Point", "Debug point", "memory")
+        layer.setCrs(self.crs)
         layer_dp = layer.dataProvider()
 
         layer_dp.addAttributes([
@@ -351,6 +353,7 @@ class Graph:
         """DEBUG : show all arcs.
         """
         layer = QgsVectorLayer("LineString", "Debug edges", "memory")
+        layer.setCrs(self.crs)
         dp = layer.dataProvider()
         attrs = []
         attrs.append(QgsField("id_arc", QVariant.Int))
@@ -392,6 +395,7 @@ class InasafeGraph(Graph):
 
     def cost_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
         idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
+        idp_exit_layer.setCrs(self.crs)
         dp = idp_exit_layer.dataProvider()
         dp.addAttributes([
             QgsField("id_idp", QVariant.Int),
@@ -400,6 +404,7 @@ class InasafeGraph(Graph):
         idp_exit_layer.updateFields()
 
         route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
+        route_layer.setCrs(self.crs)
         dp_route = route_layer.dataProvider()
         dp_route.addAttributes([
             QgsField("id_idp", QVariant.Int),
@@ -407,6 +412,7 @@ class InasafeGraph(Graph):
         ])
         route_layer.updateFields()
 
+        # Working on exits
         for exit in exit_layer.getFeatures():
             idp_id = -1
             min_cost = -1
