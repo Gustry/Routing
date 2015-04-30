@@ -10,6 +10,9 @@ class MultiplyProperter(QgsArcProperter):
     def property(self, distance, feature):
         attrs = feature.attributes()
         val = distance * float(attrs[self.attribute_id])
+
+        if val < 0:
+            return 10000
         return val
 
     def requiredAttributes(self):

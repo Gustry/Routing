@@ -431,7 +431,7 @@ class InasafeGraph(Graph):
                 f.setGeometry(exit.geometry())
                 dp.addFeatures([f])
 
-                geom_route = self.route_between_multiline(
+                geom_route = self.route_between_geom(
                     idp.geometry().asPoint(),
                     exit.geometry().asPoint(),
                     cost_strategy)
