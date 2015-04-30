@@ -24,6 +24,7 @@ from PyQt4.QtCore import QVariant
 from processing.core.GeoAlgorithmExecutionException import \
     GeoAlgorithmExecutionException
 
+from properter import MultiplyProperter
 
 class Graph:
 
@@ -381,6 +382,13 @@ class Graph:
 
         layer.updateExtents()
         QgsMapLayerRegistry.instance().addMapLayers([layer])
+
+class InasafeGraph(Graph):
+    def __init__(self, layer, points=[], topology_tolerance=0, coef=None):
+        Graph.__init__(self, layer, points, topology_tolerance)
+
+        if coef:
+            self.add_cost("flood", MultiplyProperter(coef, 1), True)
 
     def cost_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
         idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
