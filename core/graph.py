@@ -24,23 +24,39 @@ from PyQt4.QtCore import QVariant
 from processing.core.GeoAlgorithmExecutionException import \
     GeoAlgorithmExecutionException
 
-from properter import MultiplyProperter
 
 class Graph:
 
-    def __init__(self, layer, points=[], coef=None, topology_tolerance=0):
-        self.layer = layer
-        self.director = QgsLineVectorLayerDirector(layer, -1, '', '', '', 3)
-        self.director.addProperter(QgsDistanceArcProperter())
-        self.num_criterion = 1
-        if coef:
-            self.num_criterion += 1
-            self.director.addProperter(MultiplyProperter(coef, 1))
-        self.crs = self.layer.crs()
-        self.builder = QgsGraphBuilder(self.crs, topologyTolerance=topology_tolerance)
-        self.tiedPoint = self.director.makeGraph(self.builder, points)
-        self.graph = self.builder.graph()
+    def __init__(self, layer, points=[], topology_tolerance=0):
         self.dijkstra_results = {}
+        self.properties = []
+        self.layer = layer
+        self.points = points
+        self.topology_tolerance = topology_tolerance
+        self.crs = self.layer.crs()
+        self.director = QgsLineVectorLayerDirector(layer, -1, '', '', '', 3)
+        self.add_cost('distance', QgsDistanceArcProperter())
+
+        self.builder = None
+        self.tiedPoint = None
+        self.graph = None
+        self.build()
+
+    '''
+    BUILDER
+    '''
+    def build(self):
+        self.builder = QgsGraphBuilder(self.crs, topologyTolerance=self.topology_tolerance)
+        self.tiedPoint = self.director.makeGraph(self.builder, self.points)
+        self.graph = self.builder.graph()
+
+    def add_cost(self, name, cost_stategy):
+        if name not in self.properties:
+            self.director.addProperter(cost_stategy)
+            self.properties.append(name)
+            return True
+        else:
+            return False
 
     '''
     ITERATOR
@@ -200,7 +216,7 @@ class Graph:
     '''
     ROUTING
     '''
-    def dijkstra(self, start, criterion=0):
+    def dijkstra(self, start, cost_strategy='distance'):
         """Compute dijkstra from a start point.
 
         :param start The start.
@@ -210,41 +226,43 @@ class Graph:
         :rtype: tab
         """
 
-        if criterion >= self.num_criterion:
-            msg = 'Property %s doesn\'t exist' % criterion
+        if cost_strategy not in self.properties:
+            msg = 'Cost %s doesn\'t exist' % cost_strategy
             raise GeoAlgorithmExecutionException(msg)
 
         if start not in self.dijkstra_results.keys():
             self.dijkstra_results[start] = {}
 
-        if criterion not in self.dijkstra_results[start].keys():
+        if cost_strategy not in self.dijkstra_results[start].keys():
             vertex_id = self.get_nearest_vertex_id(start)
+            criterion = self.properties.index(cost_strategy)
             dijkstra = QgsGraphAnalyzer.dijkstra(
                 self.graph, vertex_id, criterion)
-            self.dijkstra_results[start][criterion] = dijkstra
 
-        return self.dijkstra_results[start][criterion]
+            self.dijkstra_results[start][cost_strategy] = dijkstra
 
-    def cost_between(self, start, end, criterion=0):
+        return self.dijkstra_results[start][cost_strategy]
+
+    def cost_between(self, start, end, cost_strategy='distance'):
         """Compute cost between two points.
 
         :type start QgsPoint or int or QgsGraphVertex
         :type end QgsPoint or int or QgsGraphVertex
-        
+
         :return The cost.
         :rtype int
         """
         vertex_start_id = self.get_nearest_vertex_id(start)
         vertex_stop_id = self.get_nearest_vertex_id(end)
-        tree, cost = self.dijkstra(vertex_start_id, criterion)
+        tree, cost = self.dijkstra(vertex_start_id, cost_strategy)
         return cost[vertex_stop_id]
 
-    def route_between_geom(self, start, end, criterion=0):
-        cost = self.cost_between(start, end, criterion)
+    def route_between_geom(self, start, end, cost_strategy='distance'):
+        cost = self.cost_between(start, end, cost_strategy)
         if cost < 0:
             raise GeoAlgorithmExecutionException("Path not found")
 
-        tree, cost = self.dijkstra(start, criterion)
+        tree, cost = self.dijkstra(start, cost_strategy)
         vertex_start_id = self.get_nearest_vertex_id(start)
         vertex_stop_id = self.get_nearest_vertex_id(end)
         current_vertex = vertex_stop_id
@@ -257,12 +275,13 @@ class Graph:
 
         return QgsGeometry().fromMultiPolyline(multigeom)
 
-    def route_between(self, start, end, criterion=0):
-        geom = self.route_between_geom(start, end, criterion)
-        return geom, geom.length(), self.cost_between(start, end, criterion)
+    def route_between(self, start, end, cost_strategy='distance'):
+        geom = self.route_between_geom(start, end, cost_strategy)
+        return \
+            geom, geom.length(), self.cost_between(start, end, cost_strategy)
 
-    def show_route_between(self, start, end, criterion=0):
-        route = self.route_between(start, end, criterion)
+    def show_route_between(self, start, end, cost_strategy='distance'):
+        route = self.route_between(start, end, cost_strategy)
         geom = route[0]
         length = route[1]
         cost = route[2]
@@ -283,7 +302,7 @@ class Graph:
         data_provider.updateExtents()
         QgsMapLayerRegistry.instance().addMapLayers([route_layer])
 
-    def isochrone(self, start, cost, criterion=0):
+    def isochrone(self, start, cost, cost_strategy='distance'):
         """Compute isochrone"""
         pass
 
@@ -330,8 +349,8 @@ class Graph:
         dp = layer.dataProvider()
         attrs = []
         attrs.append(QgsField("id_arc", QVariant.Int))
-        for i in range(0, self.num_criterion):
-            attrs.append(QgsField("cost_%s" % i, QVariant.Double))
+        for i, strategy in enumerate(self.properties):
+            attrs.append(QgsField("%s_%s" % (i, strategy), QVariant.Double))
         attrs.append(QgsField("in_vertex", QVariant.Int))
         attrs.append(QgsField("out_vertex", QVariant.Int))
 
@@ -359,10 +378,7 @@ class Graph:
         layer.updateExtents()
         QgsMapLayerRegistry.instance().addMapLayers([layer])
 
-    '''
-    SPECIFIC to InaSAFE
-    '''
-    def cost_exits(self, idp_layer, exit_layer, criterion=0):
+    def cost_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
         idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
         dp = idp_exit_layer.dataProvider()
         dp.addAttributes([
@@ -386,7 +402,7 @@ class Graph:
                 cost = self.cost_between(
                     exit.geometry().asPoint(),
                     idp.geometry().asPoint(),
-                    criterion)
+                    cost_strategy)
 
                 if cost >= 0:
                     if cost < min_cost or min_cost <= 0:
@@ -403,7 +419,10 @@ class Graph:
                 f.setGeometry(exit.geometry())
                 dp.addFeatures([f])
 
-                geom_route = self.route_between_multiline(idp.geometry().asPoint(), exit.geometry().asPoint(), criterion)
+                geom_route = self.route_between_multiline(
+                    idp.geometry().asPoint(),
+                    exit.geometry().asPoint(),
+                    cost_strategy)
                 r_feature = QgsFeature()
                 attrs = [idp_id, min_cost]
                 r_feature.setGeometry(geom_route)
