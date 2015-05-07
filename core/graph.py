@@ -26,18 +26,38 @@ from processing.core.GeoAlgorithmExecutionException import \
 
 from properter import MultiplyProperter
 
+
 class Graph:
 
-    def __init__(self, layer, points=[], topology_tolerance=0):
+    def __init__(
+            self,
+            layer,
+            points=[],
+            direction_field_id=-1,
+            direct_direction_value='',
+            reverse_direction_value='',
+            both_direction_value='',
+            default_direction=3,
+            ctf_enabled=True,
+            topology_tolerance=0.0,
+            ellipsoid_id='WGS84'):
+
         self.dijkstra_results = {}
         self.properties = []
         self.layer = layer
         self.points = points
         self.topology_tolerance = topology_tolerance
         self.crs = self.layer.crs()
-        self.director = QgsLineVectorLayerDirector(layer, -1, '', '', '', 3)
+        self.ctf_enabled = ctf_enabled
+        self.ellipsoid_id = ellipsoid_id
+        self.director = QgsLineVectorLayerDirector(
+            layer,
+            direction_field_id,
+            direct_direction_value,
+            reverse_direction_value,
+            both_direction_value,
+            default_direction)
         self.add_cost('distance', QgsDistanceArcProperter())
-
         self.builder = None
         self.tiedPoint = None
         self.graph = None
@@ -47,8 +67,13 @@ class Graph:
     BUILDER
     '''
     def build(self):
-        self.builder = QgsGraphBuilder(self.crs, topologyTolerance=self.topology_tolerance)
+        self.builder = QgsGraphBuilder(
+            self.crs,
+            otfEnabled=self.ctf_enabled,
+            topologyTolerance=self.topology_tolerance,
+            ellipsoidID=self.ellipsoid_id)
         self.tiedPoint = self.director.makeGraph(self.builder, self.points)
+        self.distance_area = self.builder.distanceArea()
         self.graph = self.builder.graph()
 
     def add_cost(self, name, cost_stategy, build=False):
@@ -207,13 +232,13 @@ class Graph:
         :return The vertex.
         :rtype QgsGraphVertex
         """
-        min = -1
+        minimum = -1
         closest_vertex = None
 
         for vertex in self.get_vertices():
             dist = point.sqrDist(vertex.point())
-            if dist < min or not closest_vertex:
-                min = dist
+            if dist < minimum or not closest_vertex:
+                minimum = dist
                 closest_vertex = vertex
 
         return closest_vertex
@@ -310,7 +335,7 @@ class Graph:
 
     def isochrone(self, start, cost, cost_strategy='distance'):
         """Compute isochrone"""
-        pass
+        return None
 
     '''
     DEBUG
@@ -386,12 +411,39 @@ class Graph:
         layer.updateExtents()
         QgsMapLayerRegistry.instance().addMapLayers([layer])
 
-class InasafeGraph(Graph):
-    def __init__(self, layer, points=[], topology_tolerance=0, coef=None):
-        Graph.__init__(self, layer, points, topology_tolerance)
 
-        if coef:
-            self.add_cost("flood", MultiplyProperter(coef, 1), True)
+class InasafeGraph(Graph):
+
+    def __init__(
+            self,
+            layer,
+            points=[],
+            direction_field_id=-1,
+            direct_direction_value='',
+            reverse_direction_value='',
+            both_direction_value='',
+            default_direction=3,
+            ctf_enabled=True,
+            topology_tolerance=0,
+            ellipsoid_id='WGS84',
+            coefficient_field_id=None):
+
+        Graph.__init__(
+            self,
+            layer,
+            points,
+            direction_field_id,
+            direct_direction_value,
+            reverse_direction_value,
+            both_direction_value,
+            default_direction,
+            ctf_enabled,
+            topology_tolerance,
+            ellipsoid_id)
+
+        if coefficient_field_id:
+            self.add_cost(
+                "flood", MultiplyProperter(coefficient_field_id, 1), True)
 
     def cost_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
         idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
