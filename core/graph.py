@@ -445,7 +445,7 @@ class InasafeGraph(Graph):
             self.add_cost(
                 "flood", MultiplyProperter(coefficient_field_id, 1), True)
 
-    def cost_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
+    def allocating_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
         idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
         idp_exit_layer.setCrs(self.crs)
         dp = idp_exit_layer.dataProvider()
@@ -502,3 +502,42 @@ class InasafeGraph(Graph):
         idp_exit_layer.updateExtents()
         route_layer.updateExtents()
         return idp_exit_layer, route_layer
+
+    '''
+    def allocating_edges_easy(self, new_exit_layer, edge_layer, cost_strategy='distance'):
+
+        route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
+        route_layer.setCrs(self.crs)
+        dp_route = route_layer.dataProvider()
+        dp_route.addAttributes([
+            QgsField("id_idp", QVariant.Int),
+            QgsField("cost", QVariant.Double),
+        ])
+        route_layer.updateFields()
+
+        # Working on edges
+        for edge in edge_layer.getFeatures():
+            polyline = edge.geometry().asPolyline()
+            print polyline
+            points = [
+                QgsPoint(polyline[0]),
+                QgsPoint(polyline[-1])]
+
+            point_start = None
+            point_end = None
+            for exit in new_exit_layer.getFeatures():
+                point = exit.geometry().asPoint()
+                if point == points[0]:
+                    point_start = exit
+                if point == points[1]:
+                    point_end = exit
+                # if point_start and point_end:
+                #    break
+
+            #print point_start
+            #print point_end
+            if not point_start or not point_end:
+                dp_route.addFeatures([edge])
+        route_layer.updateExtents()
+        return route_layer
+    '''
