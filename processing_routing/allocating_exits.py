@@ -7,13 +7,9 @@ from processing.tools.dataobjects import getObjectFromUri
 
 from qgis.core import (
     QgsVectorFileWriter,
-    QGis,
-    QgsFeature,
-    QgsGeometry,
-    QgsPoint,
-    QgsRectangle)
+    QGis)
 
-from Routing.core.graph import InasafeGraph
+from Routing.core.inasafe_graph import InasafeGraph
 
 
 class AllocatingExitsGeoAlgorithm(GeoAlgorithm):

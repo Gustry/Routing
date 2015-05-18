@@ -14,9 +14,7 @@ from qgis.core import (
     QgsFeature,
     QgsPoint,
     QgsMapLayerRegistry,
-    QgsField,
-    QgsFeatureRequest,
-    QgsSpatialIndex
+    QgsField
 )
 
 from PyQt4.QtCore import QVariant
@@ -24,10 +22,8 @@ from PyQt4.QtCore import QVariant
 from processing.core.GeoAlgorithmExecutionException import \
     GeoAlgorithmExecutionException
 
-from properter import MultiplyProperter
 
-
-class Graph:
+class Graph(object):
 
     def __init__(
             self,
@@ -98,7 +94,7 @@ class Graph:
         :rtype: list
         """
         nb_vertices = self.graph.vertexCount()
-        return (self.graph.vertex(i) for i in range(0, nb_vertices))
+        return (self.graph.vertex(i) for i in xrange(0, nb_vertices))
 
     def get_id_vertices(self):
         """Get a generator to loop over all vertices id.
@@ -116,7 +112,7 @@ class Graph:
         :rtype: list
         """
         nb_edges = self.graph.arcCount()
-        return (self.graph.arc(i) for i in range(0, nb_edges))
+        return (self.graph.arc(i) for i in xrange(0, nb_edges))
 
     def get_id_arcs(self):
         """Get a generator to loop over all arcs id.
@@ -193,6 +189,13 @@ class Graph:
         :rtype: QgsPoint
         """
         return self.get_vertex(id_vertex).point()
+
+    def get_neighbours_out(self, id_vertex):
+        vertex = self.get_vertex(id_vertex)
+        vertices = []
+        for id_arc in vertex.outArc():
+            vertices.append(self.get_in_vertex_id(id_arc))
+        return vertices
 
     '''
     SEARCHING VERTEX
@@ -285,7 +288,10 @@ class Graph:
         vertex_start_id = self.get_nearest_vertex_id(start)
         vertex_stop_id = self.get_nearest_vertex_id(end)
         tree, cost = self.dijkstra(vertex_start_id, cost_strategy)
-        return cost[vertex_stop_id]
+        cost = cost[vertex_stop_id]
+        if cost == 'inf':
+            cost = -1
+        return cost
 
     def route_between_geom(self, start, end, cost_strategy='distance'):
         cost = self.cost_between(start, end, cost_strategy)
@@ -338,12 +344,66 @@ class Graph:
         return None
 
     '''
+    ANALYSE
+    '''
+
+    def tarjan(self):
+        class StrongCC(object):
+
+            def strong_connect(self, head):
+                lowlink, count, stack = self.lowlink, self.count, self.stack
+                lowlink[head] = count[head] = self.counter = self.counter + 1
+                stack.append(head)
+
+                for tail in self.graph.get_neighbours_out(head):
+                    if tail not in count:
+                        self.strong_connect(tail)
+                        lowlink[head] = min(lowlink[head], lowlink[tail])
+                    elif count[tail] < count[head]:
+                        if tail in self.stack:
+                            lowlink[head] = min(lowlink[head], count[tail])
+
+                if lowlink[head] == count[head]:
+                    component = []
+                    while stack and count[stack[-1]] >= count[head]:
+                        component.append(stack.pop())
+                    self.connected_components.append(component)
+
+            def __call__(self, graph):
+                self.graph = graph
+                self.counter = 0
+                self.count = {}
+                self.lowlink = {}
+                self.stack = []
+                self.connected_components = []
+
+                for id_vertex in self.graph.get_id_vertices():
+                    if id_vertex not in self.count:
+                        self.strong_connect(id_vertex)
+
+                return self.connected_components
+
+        strongly_connected_components = StrongCC()
+        return strongly_connected_components(self)
+
+    def dfs(self, vertex_id, visited=None):
+
+        if visited is None:
+            visited = []
+
+        visited.append(vertex_id)
+        for next_vertex in self.get_neighbours_out(vertex_id):
+            if next_vertex not in visited:
+                self.dfs(next_vertex, visited)
+        return visited
+
+    '''
     DEBUG
     '''
     def show_vertices(self):
         """DEBUG : show all vertices.
         """
-        layer = QgsVectorLayer("Point", "Debug point", "memory")
+        layer = QgsVectorLayer("Point?crs", "Debug point", "memory")
         layer.setCrs(self.crs)
         layer_dp = layer.dataProvider()
 
@@ -410,134 +470,3 @@ class Graph:
 
         layer.updateExtents()
         QgsMapLayerRegistry.instance().addMapLayers([layer])
-
-
-class InasafeGraph(Graph):
-
-    def __init__(
-            self,
-            layer,
-            points=[],
-            direction_field_id=-1,
-            direct_direction_value='',
-            reverse_direction_value='',
-            both_direction_value='',
-            default_direction=3,
-            ctf_enabled=True,
-            topology_tolerance=0,
-            ellipsoid_id='WGS84',
-            coefficient_field_id=None):
-
-        Graph.__init__(
-            self,
-            layer,
-            points,
-            direction_field_id,
-            direct_direction_value,
-            reverse_direction_value,
-            both_direction_value,
-            default_direction,
-            ctf_enabled,
-            topology_tolerance,
-            ellipsoid_id)
-
-        if coefficient_field_id:
-            self.add_cost(
-                "flood", MultiplyProperter(coefficient_field_id, 1), True)
-
-    def allocating_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
-        idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
-        idp_exit_layer.setCrs(self.crs)
-        dp = idp_exit_layer.dataProvider()
-        dp.addAttributes([
-            QgsField("id_idp", QVariant.Int),
-            QgsField("cost", QVariant.Double),
-        ])
-        idp_exit_layer.updateFields()
-
-        route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
-        route_layer.setCrs(self.crs)
-        dp_route = route_layer.dataProvider()
-        dp_route.addAttributes([
-            QgsField("id_idp", QVariant.Int),
-            QgsField("cost", QVariant.Double),
-        ])
-        route_layer.updateFields()
-
-        # Working on exits
-        for exit in exit_layer.getFeatures():
-            idp_id = -1
-            min_cost = -1
-            for idp in idp_layer.getFeatures():
-                cost = self.cost_between(
-                    exit.geometry().asPoint(),
-                    idp.geometry().asPoint(),
-                    cost_strategy)
-
-                if cost >= 0:
-                    if cost < min_cost or min_cost <= 0:
-                        min_cost = cost
-                        idp_id = idp.id()
-
-            if min_cost > 0:
-                request = QgsFeatureRequest().setFilterFid(idp_id)
-                idp = idp_layer.getFeatures(request).next()
-
-                f = QgsFeature()
-                attrs = [idp_id, min_cost]
-                f.setAttributes(attrs)
-                f.setGeometry(exit.geometry())
-                dp.addFeatures([f])
-
-                geom_route = self.route_between_geom(
-                    idp.geometry().asPoint(),
-                    exit.geometry().asPoint(),
-                    cost_strategy)
-                r_feature = QgsFeature()
-                attrs = [idp_id, min_cost]
-                r_feature.setGeometry(geom_route)
-                r_feature.setAttributes(attrs)
-                dp_route.addFeatures([r_feature])
-
-        idp_exit_layer.updateExtents()
-        route_layer.updateExtents()
-        return idp_exit_layer, route_layer
-
-    '''
-    def allocating_edges_easy(self, new_exit_layer, edge_layer, cost_strategy='distance'):
-
-        route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
-        route_layer.setCrs(self.crs)
-        dp_route = route_layer.dataProvider()
-        dp_route.addAttributes([
-            QgsField("id_idp", QVariant.Int),
-            QgsField("cost", QVariant.Double),
-        ])
-        route_layer.updateFields()
-
-        # Working on edges
-        for edge in edge_layer.getFeatures():
-            polyline = edge.geometry().asPolyline()
-            print polyline
-            points = [
-                QgsPoint(polyline[0]),
-                QgsPoint(polyline[-1])]
-
-            point_start = None
-            point_end = None
-            for exit in new_exit_layer.getFeatures():
-                point = exit.geometry().asPoint()
-                if point == points[0]:
-                    point_start = exit
-                if point == points[1]:
-                    point_end = exit
-                # if point_start and point_end:
-                #    break
-
-            #print point_start
-            #print point_end
-            if not point_start or not point_end:
-                dp_route.addFeatures([edge])
-        route_layer.updateExtents()
-        return route_layer
-    '''
