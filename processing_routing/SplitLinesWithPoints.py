@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from qgis.core import QGis, QgsFeature, QgsFeatureRequest, QgsGeometry
-from qgis.utils import iface
 from processing.core.GeoAlgorithm import GeoAlgorithm
-from processing.core.GeoAlgorithmExecutionException import \
-    GeoAlgorithmExecutionException
 from processing.core.parameters import ParameterVector
 from processing.core.outputs import OutputVector
 from processing.tools.dataobjects import getObjectFromUri
@@ -18,11 +15,13 @@ class SplitLinesWithPoints(GeoAlgorithm):
     OUTPUT = 'OUTPUT'
 
     def defineCharacteristics(self):
-        self.name = "Split line with point"
+        self.name = "Split lines with points"
         self.group = "Vector geometry tools"
 
-        self.addParameter(ParameterVector(self.LINES, 'Lines', [ParameterVector.VECTOR_TYPE_LINE], False))
-        self.addParameter(ParameterVector(self.POINTS, 'Points', [ParameterVector.VECTOR_TYPE_POINT], False))
+        self.addParameter(ParameterVector(
+            self.LINES, 'Lines', [ParameterVector.VECTOR_TYPE_LINE], False))
+        self.addParameter(ParameterVector(
+            self.POINTS, 'Points', [ParameterVector.VECTOR_TYPE_POINT], False))
 
         self.addOutput(OutputVector(self.OUTPUT, 'Output'))
 
@@ -55,7 +54,8 @@ class SplitLinesWithPoints(GeoAlgorithm):
 
         for f in features(lines_layer):
             if f.id() in cutting.values():
-                list_point = [point for point, id in cutting.iteritems() if id == f.id()]
+                list_point = [
+                    point for point, id in cutting.iteritems() if id == f.id()]
                 attributes = f.attributes()
 
                 new_geometries = [f.geometry()]

@@ -125,7 +125,7 @@ class InasafeGraph(Graph):
 
         index_idp_id = exit_layer.fieldNameIndex(field_name)
 
-        for point in self.tiedPoint:
+        #for point in self.tiedPoint:
 
         print self.tiedPoint
 
