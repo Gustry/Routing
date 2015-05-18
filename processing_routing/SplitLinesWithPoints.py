@@ -41,36 +41,22 @@ class SplitLinesWithPoints(GeoAlgorithm):
         cutting = {}
         for f in features(points_layer):
             point = f.geometry().asPoint()
-            results = idx_lines.nearestNeighbor(point, 1)
-            request = QgsFeatureRequest().setFilterFid(results[0])
-            cutting[point] = lines_layer.getFeatures(request).next().id()
+            results = idx_lines.nearestNeighbor(point, 0)
+            min = None
+            f_id = None
+            for result in results:
+                request = QgsFeatureRequest().setFilterFid(result)
+                line = lines_layer.getFeatures(request).next()
+                dist = line.geometry().distance(f.geometry())
+                if dist < min or min is None:
+                    min = dist
+                    f_id = line.id()
+            cutting[point] = f_id
 
         for f in features(lines_layer):
             if f.id() in cutting.values():
                 list_point = [point for point, id in cutting.iteritems() if id == f.id()]
                 attributes = f.attributes()
-                # geometry = f.geometry()
-                # polyline = geometry.asPolyline()
-
-                '''
-                if len(list_point) == 1:
-                    new_polylines = []
-                    result = geometry.closestSegmentWithContext(point)
-                    new_point = result[1]
-                    index = result[2]
-                    polyline.insert(index, new_point)
-                    new_polylines.append(polyline[0:index+1])
-                    new_polylines.append(polyline[-index-1:])
-
-                    for new_polyline in new_polylines:
-                        new_feature = QgsFeature()
-                        new_feature.setAttributes(attributes)
-                        new_feature.setGeometry(
-                            QgsGeometry.fromPolyline(new_polyline))
-                        writer.addFeature(new_feature)
-
-                else:
-                '''
 
                 new_geometries = [f.geometry()]
                 for point in list_point:
@@ -91,10 +77,11 @@ class SplitLinesWithPoints(GeoAlgorithm):
                     i = new_geometries.index(closest_geom)
                     new_geometries.pop(i)
                     temp_geometries = []
+                    l = len(polyline)
                     temp_geometries.append(
-                        QgsGeometry.fromPolyline(polyline[0:index+1]))
+                        QgsGeometry.fromPolyline(polyline[:index+1]))
                     temp_geometries.append(
-                        QgsGeometry.fromPolyline(polyline[-index-1:]))
+                        QgsGeometry.fromPolyline(polyline[-(l-index):]))
 
                     for geom in temp_geometries:
                         if geom.length() > 0:
