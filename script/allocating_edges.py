@@ -1,4 +1,4 @@
-from Routing.core.graph import InasafeGraph
+from Routing.core.inasafe_graph import InasafeGraph
 from processing.core.GeoAlgorithmExecutionException import \
     GeoAlgorithmExecutionException
 

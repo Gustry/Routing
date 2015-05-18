@@ -8,7 +8,8 @@ from qgis.core import (
     QgsFeature,
     QgsPoint,
     QgsField,
-    QgsFeatureRequest
+    QgsFeatureRequest,
+    QgsSpatialIndex
 )
 
 from PyQt4.QtCore import QVariant
