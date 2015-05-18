@@ -114,7 +114,45 @@ class InasafeGraph(Graph):
         request = QgsFeatureRequest().setFilterFid(idx)
         return layer.getFeatures(request).next()
 
-    def test_edges(self, exit_layer):
+    def test(self, exit_layer, field_name='idp_id'):
+        cut = QgsVectorLayer("Point", "Exits", "memory")
+        cut.setCrs(self.crs)
+        dp = cut.dataProvider()
+
+        index = QgsSpatialIndex()
+        for one_exit in exit_layer.getFeatures():
+            index.insertFeature(one_exit)
+
+        index_idp_id = exit_layer.fieldNameIndex(field_name)
+
+        for point in self.tiedPoint:
+
+        print self.tiedPoint
+
+    def points_on_edges(self, exit_layer, field_name='idp_id'):
+        cut = QgsVectorLayer("Point", "Exits", "memory")
+        cut.setCrs(self.crs)
+        dp = cut.dataProvider()
+
+        index = QgsSpatialIndex()
+        for one_exit in exit_layer.getFeatures():
+            index.insertFeature(one_exit)
+
+        index_idp_id = exit_layer.fieldNameIndex(field_name)
+        for strongly_connected in self.tarjan():
+            print strongly_connected
+            shift = strongly_connected[1:] + strongly_connected[:1]
+            for vertex_a, vertex_b in zip(strongly_connected, shift):
+                feature_a = self._get_feature(exit_layer, index, self.get_vertex_point(vertex_a))
+                idp_a = feature_a.attributes()[index_idp_id]
+                feature_b = self._get_feature(exit_layer, index, self.get_vertex_point(vertex_b))
+                idp_b = feature_b.attributes()[index_idp_id]
+
+                if idp_a != idp_b:
+                    print str(feature_a.attributes()[0]) + " > " + str(feature_b.attributes()[0]) + ' = ' + str(self.cost_between(feature_a.geometry().asPoint(), feature_b.geometry().asPoint()))
+
+
+    def test_edges(self, exit_layer, field_name='idp_id'):
 
         cut = QgsVectorLayer("Point", "Exits", "memory")
         cut.setCrs(self.crs)
@@ -132,12 +170,10 @@ class InasafeGraph(Graph):
         for exit in exit_layer.getFeatures():
             index.insertFeature(exit)
 
-        index_idp_id = exit_layer.fieldNameIndex('idp_id')
-        index_idp_id = 0
+        index_idp_id = exit_layer.fieldNameIndex(field_name)
 
         for strongly_connected in self.tarjan():
             shift = strongly_connected[1:] + strongly_connected[:1]
-            print strongly_connected
             for vertex_a, vertex_b in zip(strongly_connected, shift):
                 feature_a = self._get_feature(exit_layer, index, self.get_vertex_point(vertex_a))
                 print str(self.get_vertex_point(vertex_a)) + '<=>' + str(feature_a.geometry().asPoint()) + ' ' + str(feature_a.attributes())
