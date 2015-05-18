@@ -289,7 +289,7 @@ class Graph(object):
         vertex_stop_id = self.get_nearest_vertex_id(end)
         tree, cost = self.dijkstra(vertex_start_id, cost_strategy)
         cost = cost[vertex_stop_id]
-        if cost == 'inf':
+        if cost == float('inf'):
             cost = -1
         return cost
 
