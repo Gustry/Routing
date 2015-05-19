@@ -2,6 +2,7 @@
 
 from qgis.core import QGis, QgsFeature, QgsFeatureRequest, QgsGeometry
 from processing.core.GeoAlgorithm import GeoAlgorithm
+from processing.core.GeoAlgorithmExecutionException import GeoAlgorithmExecutionException
 from processing.core.parameters import ParameterVector
 from processing.core.outputs import OutputVector
 from processing.tools.dataobjects import getObjectFromUri
@@ -40,7 +41,7 @@ class SplitLinesWithPoints(GeoAlgorithm):
         cutting = {}
         for f in features(points_layer):
             point = f.geometry().asPoint()
-            results = idx_lines.nearestNeighbor(point, 0)
+            results = idx_lines.nearestNeighbor(point, 5)
             min = None
             f_id = None
             for result in results:
@@ -72,16 +73,52 @@ class SplitLinesWithPoints(GeoAlgorithm):
                     result = closest_geom.closestSegmentWithContext(point)
                     new_point = result[1]
                     index = result[2]
-                    polyline = closest_geom.asPolyline()
-                    polyline.insert(index, new_point)
+                    temp_geometries = []
+
+                    if closest_geom.isMultipart():
+                        multipolyline = closest_geom.asMultiPolyline()
+                        for i in range(len(multipolyline)):
+                            l = len(multipolyline[i])
+                            if index > l:
+                                index -= l
+                            else:
+                                multipolyline[i].insert(index, new_point)
+                                break
+
+                        temp1 = []
+                        temp2 = []
+                        index = result[2]
+                        sum = 0
+                        for i in range(len(multipolyline)):
+                            l = len(multipolyline[i])
+                            if sum + l < index:
+                                temp1.append(multipolyline[i])
+                            elif (sum < index) and (sum + l) > index:
+                                temp1.append(
+                                    multipolyline[i][:(index-sum) + 1])
+                                if sum == 0:
+                                    temp2.append(multipolyline[i][index:])
+                                else:
+                                    temp2.append(multipolyline[i][-sum:])
+                            else:
+                                temp2.append(multipolyline[i])
+                            sum += l
+                        temp_geometries.append(
+                            QgsGeometry.fromMultiPolyline(temp1))
+                        temp_geometries.append(
+                            QgsGeometry.fromMultiPolyline(temp2))
+
+                    else:
+                        polyline = closest_geom.asPolyline()
+                        polyline.insert(index, new_point)
+                        l = len(polyline)
+                        temp_geometries.append(
+                            QgsGeometry.fromPolyline(polyline[:index+1]))
+                        temp_geometries.append(
+                            QgsGeometry.fromPolyline(polyline[-(l-index):]))
+
                     i = new_geometries.index(closest_geom)
                     new_geometries.pop(i)
-                    temp_geometries = []
-                    l = len(polyline)
-                    temp_geometries.append(
-                        QgsGeometry.fromPolyline(polyline[:index+1]))
-                    temp_geometries.append(
-                        QgsGeometry.fromPolyline(polyline[-(l-index):]))
 
                     for geom in temp_geometries:
                         if geom.length() > 0:
