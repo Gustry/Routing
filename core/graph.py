@@ -197,6 +197,10 @@ class Graph(object):
             vertices.append(self.get_in_vertex_id(id_arc))
         return vertices
 
+    def nb_arcs_out(self, id_vertex):
+        vertex = self.get_vertex(id_vertex)
+        return len(vertex.outArc())
+
     '''
     SEARCHING VERTEX
     '''

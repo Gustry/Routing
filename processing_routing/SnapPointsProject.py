@@ -24,7 +24,7 @@ class SnapPointsProject(GeoAlgorithm):
             self.POINTS, 'Points', [ParameterVector.VECTOR_TYPE_POINT], False))
         self.addParameter(ParameterBoolean(
             self.SNAPPED,
-            'Add an attribute about if it has been snapped',
+            'Add an attribute if the entity has been snapped',
             False))
 
         self.addOutput(OutputVector(self.OUTPUT, 'Output'))

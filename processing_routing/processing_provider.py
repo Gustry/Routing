@@ -8,6 +8,7 @@ from Routing.processing_routing.LinesIntersection import LinesIntersection
 from Routing.processing_routing.SnapPointsProject import SnapPointsProject
 from Routing.processing_routing.SnapPoints import SnapPoints
 from Routing.processing_routing.SplitLinesWithPoints import SplitLinesWithPoints
+from Routing.processing_routing.SplitPolygonsToLinesWithPoints import SplitPolygonsToLinesWithPoints
 
 class ProcessingProvider(AlgorithmProvider):
 
@@ -23,6 +24,7 @@ class ProcessingProvider(AlgorithmProvider):
                         SnapPointsProject(),
                         SnapPoints(),
                         SplitLinesWithPoints(),
+                        SplitPolygonsToLinesWithPoints(),
                         RoutingTwoPointsGeoAlgorithm()]
 
         for alg in self.alglist:

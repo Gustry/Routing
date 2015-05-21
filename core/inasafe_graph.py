@@ -50,6 +50,28 @@ class InasafeGraph(Graph):
                 name_coefficient_flood,
                 MultiplyProperter(coefficient_field_id, 1), True)
 
+    def get_nearest_vertex(self, point, connected=False):
+        """Get the nearest vertex.
+
+        :param point The point.
+        :type point QgsPoint
+
+        :return The vertex.
+        :rtype QgsGraphVertex
+        """
+        minimum = -1
+        closest_vertex = None
+
+        for vertex in self.get_vertices():
+            if connected and vertex.nb_arcs_out() < 1:
+                pass
+            dist = point.sqrDist(vertex.point())
+            if dist < minimum or not closest_vertex:
+                minimum = dist
+                closest_vertex = vertex
+
+        return closest_vertex
+
     def allocating_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
         idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
         idp_exit_layer.setCrs(self.crs)
@@ -119,9 +141,11 @@ class InasafeGraph(Graph):
         cut.setCrs(self.crs)
         dp = cut.dataProvider()
 
-        index = QgsSpatialIndex()
-        for one_exit in exit_layer.getFeatures():
-            index.insertFeature(one_exit)
+
+        #index = QgsSpatialIndex()
+        #for one_exit in exit_layer.getFeatures():
+        #    index.insertFeature(one_exit)
+
 
         index_idp_id = exit_layer.fieldNameIndex(field_name)
 
