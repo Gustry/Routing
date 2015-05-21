@@ -141,9 +141,9 @@ class SplitPolygonsToLinesWithPoints(GeoAlgorithm):
                         i = new_geometries.index(closest_geom)
                         new_geometries.pop(i)
 
-                    for geom in temp_geometries:
-                        if geom.length() > 0:
-                            new_geometries.append(geom)
+                        for geom in temp_geometries:
+                            if geom.length() > 0:
+                                new_geometries.append(geom)
 
                 for geom in new_geometries:
                     feature.setGeometry(geom)
