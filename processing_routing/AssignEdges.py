@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from Routing.core.middle import *
 from qgis.core import QGis, QgsFeature, QgsFeatureRequest, QgsGeometry, QgsField, QgsPoint
 from PyQt4.QtCore import QVariant
 from processing.core.GeoAlgorithm import GeoAlgorithm
@@ -64,7 +65,14 @@ class AssignEdges(GeoAlgorithm):
                 edge.setAttributes([idp_start])
                 writer.addFeature(edge)
             else:
-                print geometry.asPolyline()
+                geom = geometry.asPolyline()
+                split = split_middle(geom)
+                for idp, part in zip([idp_start, idp_end], split):
+                    f = QgsFeature()
+                    f.setAttributes([idp])
+                    new_geom = [QgsPoint(p[0], p[1]) for p in part]
+                    f.setGeometry(QgsGeometry.fromPolyline(new_geom))
+                    writer.addFeature(f)
 
         del writer
 

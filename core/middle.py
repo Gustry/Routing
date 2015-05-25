@@ -1,5 +1,5 @@
 __author__ = 'etienne'
-from math import sqrt, pow
+from math import sqrt, pow, cos, sin, radians, atan2, degrees, pi
 
 def get_distance(p1, p2):
     delta_x = p2[0] - p1[0]
@@ -12,9 +12,17 @@ def get_distances(line):
         segments_length.append(get_distance(p1, p2))
     return segments_length
 
-def get_middle(p1, p2):
-    x = float(p1[0] + p2[0]) / 2
-    y = float(p1[1] + p2[1]) / 2
+def azimuth(p1, p2):
+    dx = p2[0] - p1[0]
+    dy = p2[1] - p1[1]
+    rads = atan2(dy, dx)
+    rads %= 2*pi
+    return rads
+
+def get_middle(p1, p2, distance):
+    teta = azimuth(p1, p2)
+    x = distance * cos(teta) + p1[0]
+    y = distance * sin(teta) + p1[1]
     return x, y
 
 def split_middle(line):
@@ -25,7 +33,8 @@ def split_middle(line):
         if half_distance > iter_sum and half_distance < iter_sum + dist:
             point_1 = line[i]
             point_2 = line[i+1]
-            middle = get_middle(point_1, point_2)
+            d = half_distance - iter_sum
+            middle = get_middle(point_1, point_2, d)
             line.insert(i+1, middle)
             return line[0:i+2], line[i+1:]
         elif half_distance == iter_sum + dist:
