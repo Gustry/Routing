@@ -32,11 +32,3 @@ def split_middle(line):
             return line[0:i+2], line[i+1:]
         else:
             iter_sum += dist
-
-a_line = [(20.4453,-34.0181), (20.4462,-34.0184)]
-a_line = [(0, 0), (4, 0)]
-#a_line = [(20.4473,-34.017), (20.4473,-34.017), (20.447,-34.0167), (20.4461,-34.0164)]
-print a_line
-print split_middle(a_line)
-
-
