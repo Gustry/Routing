@@ -3,6 +3,7 @@ from processing.core.AlgorithmProvider import AlgorithmProvider
 
 from Routing.processing_routing.routing_two_points import RoutingTwoPointsGeoAlgorithm
 from Routing.processing_routing.allocating_exits import AllocatingExitsGeoAlgorithm
+from Routing.processing_routing.AssignEdges import AssignEdges
 from Routing.processing_routing.DeleteHoles import DeleteHoles
 from Routing.processing_routing.LinesIntersection import LinesIntersection
 from Routing.processing_routing.SnapPointsProject import SnapPointsProject
@@ -25,6 +26,7 @@ class ProcessingProvider(AlgorithmProvider):
                         SnapPoints(),
                         SplitLinesWithPoints(),
                         SplitPolygonsToLinesWithPoints(),
+                        AssignEdges(),
                         RoutingTwoPointsGeoAlgorithm()]
 
         for alg in self.alglist:
