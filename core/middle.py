@@ -22,21 +22,21 @@ def split_middle(line):
     half_distance = sum(distances) / 2
     iter_sum = 0
     for i, dist in enumerate(distances):
-        if iter_sum < half_distance:
-            iter_sum += dist
-        elif iter_sum > half_distance:
-            point_1 = line[i-1]
-            point_2 = line[i]
+        if half_distance > iter_sum and half_distance < iter_sum + dist:
+            point_1 = line[i]
+            point_2 = line[i+1]
             middle = get_middle(point_1, point_2)
-            line.insert(i, middle)
-            return line[0:i+1], line[i:]
+            line.insert(i+1, middle)
+            return line[0:i+2], line[i+1:]
+        elif half_distance == iter_sum + dist:
+            return line[0:i+2], line[i+1:]
         else:
-            return line[0:(i+1)], line[i:]
+            iter_sum += dist
 
-
-#a_line = [(0, 0), (1, 1), (3, 3), (4, 4)]
+a_line = [(20.4453,-34.0181), (20.4462,-34.0184)]
+a_line = [(0, 0), (4, 0)]
 #a_line = [(20.4473,-34.017), (20.4473,-34.017), (20.447,-34.0167), (20.4461,-34.0164)]
-#print a_line
-#print split_middle(a_line)
+print a_line
+print split_middle(a_line)
 
 
