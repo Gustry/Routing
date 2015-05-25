@@ -226,7 +226,7 @@ class Graph(object):
                 vertex = self.get_nearest_vertex(point)
                 vertex_id = self.graph.findVertex(vertex.point())
         else:
-            raise GeoAlgorithmExecutionException("unknown type")
+            raise GeoAlgorithmExecutionException('unknown type')
 
         return vertex_id
 
@@ -300,7 +300,7 @@ class Graph(object):
     def route_between_geom(self, start, end, cost_strategy='distance'):
         cost = self.cost_between(start, end, cost_strategy)
         if cost < 0:
-            raise GeoAlgorithmExecutionException("Path not found")
+            raise GeoAlgorithmExecutionException('Path not found')
 
         tree, cost = self.dijkstra(start, cost_strategy)
         vertex_start_id = self.get_nearest_vertex_id(start)
@@ -326,13 +326,14 @@ class Graph(object):
         length = route[1]
         cost = route[2]
 
-        route_layer = QgsVectorLayer("LineString", "Route %s" % cost, "memory")
-        route_layer.setCrs(self.crs)
+        srs = self.crs.toWkt()
+        route_layer = QgsVectorLayer(
+            'LineString?crs=' + srs, 'Route %s' % cost, 'memory')
         data_provider = route_layer.dataProvider()
 
         data_provider.addAttributes([
-            QgsField("length", QVariant.Double),
-            QgsField("cost", QVariant.Double)
+            QgsField('length', QVariant.Double),
+            QgsField('cost', QVariant.Double)
         ])
         route_layer.updateFields()
 
@@ -407,15 +408,16 @@ class Graph(object):
     def show_vertices(self):
         """DEBUG : show all vertices.
         """
-        layer = QgsVectorLayer("Point?crs", "Debug point", "memory")
-        layer.setCrs(self.crs)
+        srs = self.crs.toWkt()
+        layer = QgsVectorLayer(
+            'Point?crs=' + srs, 'Debug point', 'memory')
         layer_dp = layer.dataProvider()
 
         layer_dp.addAttributes([
-            QgsField("id_vertex", QVariant.Int),
-            QgsField("in_arcs_nb", QVariant.Int),
-            QgsField("out_arcs_nb", QVariant.Int),
-            QgsField("arcs_nb", QVariant.Int)
+            QgsField('id_vertex', QVariant.Int),
+            QgsField('in_arcs_nb', QVariant.Int),
+            QgsField('out_arcs_nb', QVariant.Int),
+            QgsField('arcs_nb', QVariant.Int)
         ])
         layer.updateFields()
 
@@ -441,15 +443,16 @@ class Graph(object):
     def show_arcs(self):
         """DEBUG : show all arcs.
         """
-        layer = QgsVectorLayer("LineString", "Debug edges", "memory")
-        layer.setCrs(self.crs)
+        srs = self.crs.toWkt()
+        layer = QgsVectorLayer(
+            'LineString?crs=' + srs, 'Debug edges', 'memory')
         dp = layer.dataProvider()
         attrs = []
-        attrs.append(QgsField("id_arc", QVariant.Int))
+        attrs.append(QgsField('id_arc', QVariant.Int))
         for i, strategy in enumerate(self.properties):
-            attrs.append(QgsField("%s_%s" % (i, strategy), QVariant.Double))
-        attrs.append(QgsField("in_vertex", QVariant.Int))
-        attrs.append(QgsField("out_vertex", QVariant.Int))
+            attrs.append(QgsField('%s_%s' % (i, strategy), QVariant.Double))
+        attrs.append(QgsField('in_vertex', QVariant.Int))
+        attrs.append(QgsField('out_vertex', QVariant.Int))
 
         dp.addAttributes(attrs)
         layer.updateFields()

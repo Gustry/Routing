@@ -73,21 +73,22 @@ class InasafeGraph(Graph):
         return closest_vertex
 
     def allocating_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
-        idp_exit_layer = QgsVectorLayer("Point", "Exits", "memory")
-        idp_exit_layer.setCrs(self.crs)
+        srs = self.crs.toWkt()
+        idp_exit_layer = QgsVectorLayer(
+            'Point?crs=' + srs, 'Exits', 'memory')
         dp = idp_exit_layer.dataProvider()
         dp.addAttributes([
-            QgsField("id_idp", QVariant.Int),
-            QgsField("cost", QVariant.Double),
+            QgsField('id_idp', QVariant.Int),
+            QgsField('cost', QVariant.Double),
         ])
         idp_exit_layer.updateFields()
 
-        route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
-        route_layer.setCrs(self.crs)
+        route_layer = QgsVectorLayer(
+            'MultiLineString?crs=' + srs, 'Route', 'memory')
         dp_route = route_layer.dataProvider()
         dp_route.addAttributes([
-            QgsField("id_idp", QVariant.Int),
-            QgsField("cost", QVariant.Double),
+            QgsField('id_idp', QVariant.Int),
+            QgsField('cost', QVariant.Double),
         ])
         route_layer.updateFields()
 
@@ -137,8 +138,9 @@ class InasafeGraph(Graph):
         return layer.getFeatures(request).next()
 
     def test(self, exit_layer, field_name='idp_id'):
-        cut = QgsVectorLayer("Point", "Exits", "memory")
-        cut.setCrs(self.crs)
+        srs = self.crs.toWkt()
+        cut = QgsVectorLayer(
+            'Point?crs=' + srs, 'Exits', 'memory')
         dp = cut.dataProvider()
 
 
@@ -154,8 +156,9 @@ class InasafeGraph(Graph):
         print self.tiedPoint
 
     def points_on_edges(self, exit_layer, field_name='idp_id'):
-        cut = QgsVectorLayer("Point", "Exits", "memory")
-        cut.setCrs(self.crs)
+        srs = self.crs.toWkt()
+        cut = QgsVectorLayer(
+            'Point?crs=' + srs, 'Exits', 'memory')
         dp = cut.dataProvider()
 
         index = QgsSpatialIndex()
@@ -178,15 +181,16 @@ class InasafeGraph(Graph):
 
     def test_edges(self, exit_layer, field_name='idp_id'):
 
-        cut = QgsVectorLayer("Point", "Exits", "memory")
+        srs = self.crs.toWkt()
+        cut = QgsVectorLayer('Point', 'Exits', 'memory')
         cut.setCrs(self.crs)
         dp = cut.dataProvider()
 
-        route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
+        route_layer = QgsVectorLayer('MultiLineString', 'Route', 'memory')
         route_layer.setCrs(self.crs)
         dp_route = route_layer.dataProvider()
         dp_route.addAttributes([
-            QgsField("id_idp", QVariant.Int),
+            QgsField('id_idp', QVariant.Int),
         ])
         route_layer.updateFields()
 
@@ -222,12 +226,12 @@ class InasafeGraph(Graph):
 
     def allocating_edges_easy(self, new_exit_layer, edge_layer, cost_strategy='distance'):
 
-        route_layer = QgsVectorLayer("MultiLineString", "Route", "memory")
+        route_layer = QgsVectorLayer('MultiLineString', 'Route', 'memory')
         route_layer.setCrs(self.crs)
         dp_route = route_layer.dataProvider()
         dp_route.addAttributes([
-            QgsField("id_idp", QVariant.Int),
-            QgsField("cost", QVariant.Double),
+            QgsField('id_idp', QVariant.Int),
+            QgsField('cost', QVariant.Double),
         ])
         route_layer.updateFields()
 
