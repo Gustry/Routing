@@ -59,6 +59,7 @@ class Graph(object):
         self.builder = None
         self.tiedPoint = None
         self.graph = None
+        self.distance_area = None
         self.build()
 
     '''
@@ -72,6 +73,7 @@ class Graph(object):
             ellipsoidID=self.ellipsoid_id)
         self.tiedPoint = self.director.makeGraph(self.builder, self.points)
         self.distance_area = self.builder.distanceArea()
+        print self.distance_area
         self.graph = self.builder.graph()
 
     def add_cost(self, name, cost_stategy, build=False):
@@ -216,6 +218,8 @@ class Graph(object):
         :rtype: int
         """
         if isinstance(point, int):
+            # Try to get vertex, an exception will be raised if the point
+            # doesn't exit.
             self.get_vertex(point)
             vertex_id = point
 
@@ -233,7 +237,7 @@ class Graph(object):
         return vertex_id
 
     def get_nearest_vertex(self, point):
-        """Get the nearest vertex.
+        """Get the nearest vertex from a point.
 
         :param point The point.
         :type point QgsPoint
@@ -266,21 +270,22 @@ class Graph(object):
         """
 
         if cost_strategy not in self.properties:
-            msg = 'Cost %s doesn\'t exist' % cost_strategy
+            msg = 'Cost %s does not exist' % cost_strategy
             raise GeoAlgorithmExecutionException(msg)
 
-        if start not in self.dijkstra_results.keys():
-            self.dijkstra_results[start] = {}
+        vertex_id = self.get_nearest_vertex_id(start)
 
-        if cost_strategy not in self.dijkstra_results[start].keys():
-            vertex_id = self.get_nearest_vertex_id(start)
+        if vertex_id not in self.dijkstra_results.keys():
+            self.dijkstra_results[vertex_id] = {}
+
+        if cost_strategy not in self.dijkstra_results[vertex_id].keys():
             criterion = self.properties.index(cost_strategy)
             dijkstra = QgsGraphAnalyzer.dijkstra(
                 self.graph, vertex_id, criterion)
 
-            self.dijkstra_results[start][cost_strategy] = dijkstra
+            self.dijkstra_results[vertex_id][cost_strategy] = dijkstra
 
-        return self.dijkstra_results[start][cost_strategy]
+        return self.dijkstra_results[vertex_id][cost_strategy]
 
     def cost_between(self, start, end, cost_strategy='distance'):
         """Compute cost between two points.
@@ -320,7 +325,7 @@ class Graph(object):
     def route_between(self, start, end, cost_strategy='distance'):
         geom = self.route_between_geom(start, end, cost_strategy)
         return \
-            geom, geom.length(), self.cost_between(start, end, cost_strategy)
+            geom, self.distance_area.measure(geom), self.cost_between(start, end, cost_strategy)
 
     def show_route_between(self, start, end, cost_strategy='distance'):
         route = self.route_between(start, end, cost_strategy)
