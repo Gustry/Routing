@@ -28,7 +28,7 @@ class Graph(object):
     def __init__(
             self,
             layer,
-            points=[],
+            points=None,
             direction_field_id=-1,
             direct_direction_value='',
             reverse_direction_value='',
@@ -41,6 +41,8 @@ class Graph(object):
         self.dijkstra_results = {}
         self.properties = []
         self.layer = layer
+        if points is None:
+            points = []
         self.points = points
         self.topology_tolerance = topology_tolerance
         self.crs = self.layer.crs()
@@ -190,7 +192,7 @@ class Graph(object):
         """
         return self.get_vertex(id_vertex).point()
 
-    def get_neighbours_out(self, id_vertex):
+    def get_vertices_neighbours_out(self, id_vertex):
         vertex = self.get_vertex(id_vertex)
         vertices = []
         for id_arc in vertex.outArc():
@@ -346,7 +348,7 @@ class Graph(object):
 
     def isochrone(self, start, cost, cost_strategy='distance'):
         """Compute isochrone"""
-        return None
+        pass
 
     '''
     ANALYSE
@@ -360,7 +362,7 @@ class Graph(object):
                 lowlink[head] = count[head] = self.counter = self.counter + 1
                 stack.append(head)
 
-                for tail in self.graph.get_neighbours_out(head):
+                for tail in self.graph.get_vertices_neighbours_out(head):
                     if tail not in count:
                         self.strong_connect(tail)
                         lowlink[head] = min(lowlink[head], lowlink[tail])
@@ -397,7 +399,7 @@ class Graph(object):
             visited = []
 
         visited.append(vertex_id)
-        for next_vertex in self.get_neighbours_out(vertex_id):
+        for next_vertex in self.get_vertices_neighbours_out(vertex_id):
             if next_vertex not in visited:
                 self.dfs(next_vertex, visited)
         return visited

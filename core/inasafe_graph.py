@@ -20,7 +20,7 @@ class InasafeGraph(Graph):
     def __init__(
             self,
             layer,
-            points=[],
+            points=None,
             direction_field_id=-1,
             direct_direction_value='',
             reverse_direction_value='',
@@ -50,6 +50,7 @@ class InasafeGraph(Graph):
                 name_coefficient_flood,
                 MultiplyProperter(coefficient_field_id, 1), True)
 
+    '''
     def get_nearest_vertex(self, point, connected=False):
         """Get the nearest vertex.
 
@@ -71,6 +72,7 @@ class InasafeGraph(Graph):
                 closest_vertex = vertex
 
         return closest_vertex
+    '''
 
     def allocating_exits(self, idp_layer, exit_layer, cost_strategy='distance'):
         srs = self.crs.toWkt()
@@ -131,6 +133,7 @@ class InasafeGraph(Graph):
         route_layer.updateExtents()
         return idp_exit_layer, route_layer
 
+    '''
     @staticmethod
     def _get_feature(layer, index, point):
         idx = index.nearestNeighbor(point, 1)[0]
@@ -260,3 +263,4 @@ class InasafeGraph(Graph):
                 dp_route.addFeatures([edge])
         route_layer.updateExtents()
         return route_layer
+    '''
