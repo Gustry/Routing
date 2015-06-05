@@ -2,20 +2,27 @@ from qgis.networkanalysis import QgsArcProperter
 
 
 class MultiplyProperter(QgsArcProperter):
-    def __init__(self, attribute_id, default_value):
+    """Strategy for the cost using a coefficient."""
+
+    def __init__(self, attribute_id):
+        """Constructor."""
         QgsArcProperter.__init__(self)
         self.attribute_id = attribute_id
-        self.DefaultValue = default_value
 
     def property(self, distance, feature):
-        attrs = feature.attributes()
-        val = distance * float(attrs[self.attribute_id])
+        """Compute the cost for a feature.
 
-        if val < 0:
-            return 10000
-        return val
+        :param distance: Distance of the feature.
+        :type distance: int
+
+        :param feature: Current feature.
+        :type feature: QgsFeature
+
+        :return Cost.
+        :rtype float
+        """
+        attributes = feature.attributes()
+        return distance * float(attributes[self.attribute_id])
 
     def requiredAttributes(self):
-        l = []
-        l.append(self.attribute_id)
-        return l
+        return [self.attribute_id]
