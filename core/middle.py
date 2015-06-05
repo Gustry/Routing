@@ -34,7 +34,7 @@ def split_middle(line):
     half_distance = sum(distances) / 2
     iter_sum = 0
     for i, dist in enumerate(distances):
-        if half_distance > iter_sum and half_distance < iter_sum + dist:
+        if iter_sum < half_distance < iter_sum + dist:
             point_1 = line[i]
             point_2 = line[i+1]
             d = half_distance - iter_sum

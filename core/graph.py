@@ -24,6 +24,7 @@ from processing.core.GeoAlgorithmExecutionException import \
 
 
 class Graph(object):
+    """Manage a graph."""
 
     def __init__(
             self,
@@ -37,7 +38,39 @@ class Graph(object):
             ctf_enabled=True,
             topology_tolerance=0.0,
             ellipsoid_id='WGS84'):
+        """Constructor for the graph.
 
+        :param layer: The road layer.
+        :type layer: QgsVectorLayer
+
+        :param points: The list of points to add as tied points.
+        :type points: list
+
+        :param direction_field_id: Field containing road direction value.
+        :type direction_field_id: int
+
+        :param direct_direction_value: Value for one-way road.
+        :type direct_direction_value: str
+
+        :param reverse_direction_value: Value for reverse one-way road.
+        :type reverse_direction_value: str
+
+        :param both_direction_value: Value for road.
+        :type both_direction_value: str
+
+        :param default_direction: Default direction value (1: direct direction,
+            2: reverse direction, 3: both direction)
+        :type default_direction: int
+
+        :param ctf_enabled: Enable coordinate transform from source graph.
+        :type ctf_enabled: bool
+
+        :param topology_tolerance: Tolerance between two source points.
+        :type topology_tolerance: float
+
+        :param ellipsoid_id: Ellipsoid for edge measurement. Default WGS84.
+        :type ellipsoid_id: str
+        """
         self.dijkstra_results = {}
         self.properties = []
         self.layer = layer
@@ -66,6 +99,7 @@ class Graph(object):
     BUILDER
     '''
     def build(self):
+        """Build the graph."""
         self.builder = QgsGraphBuilder(
             self.crs,
             otfEnabled=self.ctf_enabled,
@@ -73,12 +107,25 @@ class Graph(object):
             ellipsoidID=self.ellipsoid_id)
         self.tiedPoint = self.director.makeGraph(self.builder, self.points)
         self.distance_area = self.builder.distanceArea()
-        print self.distance_area
         self.graph = self.builder.graph()
 
-    def add_cost(self, name, cost_stategy, build=False):
+    def add_cost(self, name, cost_strategy, build=False):
+        """Add a cost strategy to the graph and give it a name.
+
+        :param name: Unique name of the strategy.
+        :type name: str
+
+        :param cost_strategy: The cost strategy to use.
+        :type cost_strategy: QgsArcProperter
+
+        :param build: If the graph needs to be rebuilded after.
+        :type build bool
+
+        :return: Return True if the strategy has been added.
+        :rtype bool
+        """
         if name not in self.properties:
-            self.director.addProperter(cost_stategy)
+            self.director.addProperter(cost_strategy)
             self.properties.append(name)
 
             if build:
@@ -151,12 +198,36 @@ class Graph(object):
         return self.graph.arc(id_arc)
 
     def get_in_vertex_id(self, id_arc):
+        """Get the incoming vertex of an arc.
+
+        :param id_arc: The arc.
+        :type id_arc: int
+
+        :return: The vertex.
+        :rtype: QgsGraphVertex
+        """
         return self.get_arc(id_arc).inVertex()
 
     def get_out_vertex_id(self, id_arc):
+        """Get the outcoming vertex of an arc.
+
+        :param id_arc: The arc.
+        :type id_arc: int
+
+        :return: The vertex.
+        :rtype: QgsGraphVertex
+        """
         return self.get_arc(id_arc).outVertex()
 
     def get_arc_linestring(self, id_arc):
+        """Get the incoming vertex of an arc.
+
+        :param id_arc: The arc.
+        :type id_arc: int
+
+        :return: The vertex.
+        :rtype: QgsGraphVertex
+        """
         arc = self.get_arc(id_arc)
         point_start = self.get_vertex_point(arc.inVertex())
         point_end = self.get_vertex_point(arc.outVertex())
@@ -314,13 +385,13 @@ class Graph(object):
         vertex_stop_id = self.get_nearest_vertex_id(end)
         current_vertex = vertex_stop_id
 
-        multigeom = []
+        multigeometry = []
         while current_vertex != vertex_start_id:
             arc_id = tree[current_vertex]
-            multigeom.append(self.get_arc_linestring(arc_id))
+            multigeometry.append(self.get_arc_linestring(arc_id))
             current_vertex = self.get_out_vertex_id(arc_id)
 
-        return QgsGeometry().fromMultiPolyline(multigeom)
+        return QgsGeometry().fromMultiPolyline(multigeometry)
 
     def route_between(self, start, end, cost_strategy='distance'):
         geom = self.route_between_geom(start, end, cost_strategy)
@@ -363,19 +434,19 @@ class Graph(object):
         class StrongCC(object):
 
             def strong_connect(self, head):
-                lowlink, count, stack = self.lowlink, self.count, self.stack
-                lowlink[head] = count[head] = self.counter = self.counter + 1
+                low_link, count, stack = self.low_link, self.count, self.stack
+                low_link[head] = count[head] = self.counter = self.counter + 1
                 stack.append(head)
 
                 for tail in self.graph.get_vertices_neighbours_out(head):
                     if tail not in count:
                         self.strong_connect(tail)
-                        lowlink[head] = min(lowlink[head], lowlink[tail])
+                        low_link[head] = min(low_link[head], low_link[tail])
                     elif count[tail] < count[head]:
                         if tail in self.stack:
-                            lowlink[head] = min(lowlink[head], count[tail])
+                            low_link[head] = min(low_link[head], count[tail])
 
-                if lowlink[head] == count[head]:
+                if low_link[head] == count[head]:
                     component = []
                     while stack and count[stack[-1]] >= count[head]:
                         component.append(stack.pop())
@@ -385,7 +456,7 @@ class Graph(object):
                 self.graph = graph
                 self.counter = 0
                 self.count = {}
-                self.lowlink = {}
+                self.low_link = {}
                 self.stack = []
                 self.connected_components = []
 
@@ -435,12 +506,12 @@ class Graph(object):
             geom = QgsGeometry.fromPoint(self.get_vertex_point(id_vertex))
             in_arcs_id = vertex.inArc()
             out_arcs_id = vertex.outArc()
-            attrs = [
+            attributes = [
                 id_vertex,
                 len(in_arcs_id),
                 len(out_arcs_id),
                 len(in_arcs_id) + len(out_arcs_id)]
-            feature.setAttributes(attrs)
+            feature.setAttributes(attributes)
             feature.setGeometry(geom)
             layer_dp.addFeatures([feature])
         layer.updateExtents()
@@ -448,20 +519,20 @@ class Graph(object):
         QgsMapLayerRegistry.instance().addMapLayers([layer])
 
     def show_arcs(self):
-        """DEBUG : show all arcs.
+        """This function adds a new layer in the map canvas to debug the arcs.
         """
         srs = self.crs.toWkt()
         layer = QgsVectorLayer(
             'LineString?crs=' + srs, 'Debug edges', 'memory')
         dp = layer.dataProvider()
-        attrs = []
-        attrs.append(QgsField('id_arc', QVariant.Int))
+        fields = list()
+        fields.append(QgsField('id_arc', QVariant.Int))
         for i, strategy in enumerate(self.properties):
-            attrs.append(QgsField('%s_%s' % (i, strategy), QVariant.Double))
-        attrs.append(QgsField('in_vertex', QVariant.Int))
-        attrs.append(QgsField('out_vertex', QVariant.Int))
+            fields.append(QgsField('%s_%s' % (i, strategy), QVariant.Double))
+        fields.append(QgsField('in_vertex', QVariant.Int))
+        fields.append(QgsField('out_vertex', QVariant.Int))
 
-        dp.addAttributes(attrs)
+        dp.addAttributes(fields)
         layer.updateFields()
 
         for arc_id in self.get_id_arcs():
@@ -470,14 +541,14 @@ class Graph(object):
             out_vertex_id = self.get_out_vertex_id(arc_id)
             in_vertex_id = self.get_in_vertex_id(arc_id)
 
-            attrs = []
-            attrs.append(arc_id)
-            attrs = attrs + arc.properties()
-            attrs.append(in_vertex_id)
-            attrs.append(out_vertex_id)
+            attributes = list()
+            attributes.append(arc_id)
+            attributes = attributes + arc.properties()
+            attributes.append(in_vertex_id)
+            attributes.append(out_vertex_id)
 
             feature = QgsFeature()
-            feature.setAttributes(attrs)
+            feature.setAttributes(attributes)
             feature.setGeometry(geom)
 
             dp.addFeatures([feature])

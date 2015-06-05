@@ -3,6 +3,7 @@ import unittest
 from middle import get_distance, get_distances, get_middle, split_middle
 from math import sqrt
 
+
 class TestMiddle(unittest.TestCase):
 
     def setUp(self):
