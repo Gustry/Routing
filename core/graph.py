@@ -102,9 +102,9 @@ class Graph(object):
         """Build the graph."""
         self.builder = QgsGraphBuilder(
             self.crs,
-            otfEnabled=self.ctf_enabled,
-            topologyTolerance=self.topology_tolerance,
-            ellipsoidID=self.ellipsoid_id)
+            self.ctf_enabled,
+            self.topology_tolerance,
+            self.ellipsoid_id)
         self.tiedPoint = self.director.makeGraph(self.builder, self.points)
         self.distance_area = self.builder.distanceArea()
         self.graph = self.builder.graph()
@@ -484,7 +484,7 @@ class Graph(object):
     DEBUG
     '''
     def show_vertices(self):
-        """DEBUG : show all vertices.
+        """This function adds a new layer in the map canvas to debug vertices.
         """
         srs = self.crs.toWkt()
         layer = QgsVectorLayer(
@@ -519,7 +519,7 @@ class Graph(object):
         QgsMapLayerRegistry.instance().addMapLayers([layer])
 
     def show_arcs(self):
-        """This function adds a new layer in the map canvas to debug the arcs.
+        """This function adds a new layer in the map canvas to debug arcs.
         """
         srs = self.crs.toWkt()
         layer = QgsVectorLayer(
